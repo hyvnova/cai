@@ -1,0 +1,21 @@
+[package]
+name = "rai"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+
+
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+regex = "1"
+tokio = { version = "1", features = ["full"] }
+openai-api-rs = "6.0.3"
+lazy_static = "1.5.0"
+rodio = "0.20.1"
+syntect  = { version = "5", features = ["default"] }
+walkdir = "2.5.0"
+colored = "3.0.0"
+
