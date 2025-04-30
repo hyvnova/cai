@@ -1,145 +1,134 @@
 //! ===============================================================
-//! Client Utility Functions
+//! Client Utility Functions (Refactored)
 //!
-//! Provides enhanced output formatting and printing utilities for the CLI.
-//! Includes syntax highlighting, colored output, and user-friendly display helpers.
+//! * Syntax‑highlighted code blocks (using `syntect`)
+//! * Lightweight Markdown tinting (headings, bold/italic, lists, blockquotes)
+//! * Zero redundant regex recompiles – everything cached with `once_cell`
+//! * One‑shot colour/style helpers for system / user messages
 //! ===============================================================
 
-use colored::Colorize;
+use colored::*;
+use once_cell::sync::Lazy;
 use regex::Regex;
-use syntect::easy::HighlightLines;
-use syntect::highlighting::ThemeSet;
-use syntect::parsing::SyntaxSet;
-use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+use syntect::{
+    easy::HighlightLines,
+    highlighting::ThemeSet,
+    parsing::SyntaxSet,
+    util::{as_24_bit_terminal_escaped, LinesWithEndings},
+};
 
-/// Adds syntax highlight
-/// Adds coloring to markdown
-pub fn enhanced_print(response: &str) {
-    let code_block_re = Regex::new(r"```([A-Za-z0-9_+-]+)?\n([\s\S]*?)```").unwrap();
-    let ps = SyntaxSet::load_defaults_newlines();
-    let ts = ThemeSet::load_defaults();
-    let theme = &ts.themes["base16-ocean.dark"]; // 👀 aesthetic
+// ────────────────────────────────────────────────────────────────
+// Static caches (avoid loading theme / regex every call)
+// ────────────────────────────────────────────────────────────────
+static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(SyntaxSet::load_defaults_newlines);
+static THEME: Lazy<&'static syntect::highlighting::Theme> = Lazy::new(|| {
+    static TS: Lazy<ThemeSet> = Lazy::new(ThemeSet::load_defaults);
+    &TS.themes["base16-ocean.dark"]
+});
 
-    let mut last_end = 0;
-    for cap in code_block_re.captures_iter(response) {
-        let m = cap.get(0).unwrap();
-        let lang = normalize_lang(cap.get(1).map_or("", |m| m.as_str()));
+static CODE_BLOCK_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"```([A-Za-z0-9_+.-]*)?\n([\s\S]*?)```")
+        .expect("code‑block regex")
+});
+
+static MD_HEADER_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)^(#{1,6})\s*(.*)").unwrap());
+static MD_BOLD_RE:   Lazy<Regex> = Lazy::new(|| Regex::new(r"\*\*(.*?)\*\*").unwrap());
+static MD_ITALIC_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\*(.*?)\*").unwrap());
+static MD_LIST_RE:   Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)^[-*]\s+(.*)").unwrap());
+static MD_QUOTE_RE:  Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)^>\s+(.*)").unwrap());
+
+// ────────────────────────────────────────────────────────────────
+// Public helpers
+// ────────────────────────────────────────────────────────────────
+/// Print the AI response with syntax highlighting & markdown tint.
+/// Heavy lifting is delegated to helper fns; this fn is just the orchestrator.
+pub fn enhanced_print(resp: &str) {
+    let mut cursor = 0;
+    for cap in CODE_BLOCK_RE.captures_iter(resp) {
+        let m  = cap.get(0).unwrap();
+        let lang_raw = cap.get(1).map_or("", |m| m.as_str());
+        let lang = normalize_lang(lang_raw);
         let code = cap.get(2).unwrap().as_str();
 
-        // 🔹 Print markdown before this block, but styled
-        let markdown = &response[last_end..m.start()];
-        println!("{}", color_markdown(markdown));
-
-        // 🔸 Frame start
-        println!("{}", format!("▼ {} ▼", lang).on_black().bold().cyan());
-
-        // 🔸 Syntax-highlighted code block
-        let syntax = ps.find_syntax_by_extension(&lang)
-                       .or_else(|| Some(ps.find_syntax_plain_text()))
-                       .unwrap();
-
-        let mut h = HighlightLines::new(syntax, theme);
-        for line in LinesWithEndings::from(code) {
-            let ranges = h.highlight_line(line, &ps).expect("Highlighting failed");
-            let escaped = as_24_bit_terminal_escaped(&ranges[..], true);
-            print!("{}", escaped);
+        // ── print markdown that precedes this code block ──
+        let markdown_chunk = &resp[cursor..m.start()];
+        if !markdown_chunk.trim().is_empty() {
+            println!("{}", color_markdown(markdown_chunk));
         }
 
-        // 🔹 Frame end
+        // ── print the code block, framed ──
+        println!("{}", format!("▼ {} ▼", lang).on_black().bold().cyan());
+        highlight_code(&lang, code);
         println!("{}", "▲".repeat(20).on_black().dimmed());
 
-        last_end = m.end();
+        cursor = m.end();
     }
 
-    // Final trailing text after last block
-    if last_end < response.len() {
-        let remaining = &response[last_end..];
-        println!("{}", color_markdown(remaining));
-    }
-}
-
-fn normalize_lang(lang: &str) -> String {
-    let lower = lang.to_lowercase();
-    match lower.as_str() {
-        "python"       => "py".to_string(),
-        "javascript"   => "js".to_string(),
-        "typescript"   => "ts".to_string(),
-        "csharp" => "cs".to_string(),
-        "c++"  => "cpp".to_string(),
-        "shell" | "terminal" | "sh" => "bash".to_string(),
-        "yaml" => "yml".to_string(),
-        "rust" => "rs".to_string(),
-        other          => other.to_string(),
-    }
-}
-
-
-/// Prints a string to the console with optional syntax highlighting.
-///
-/// # Arguments
-/// * `s` - The string to print.
-/// * `lang` - Optional language for syntax highlighting.
-pub fn print_with_highlight(s: &str, lang: Option<&str>) {
-    let syntax = match lang {
-        Some(l) => {
-            let ps = SyntaxSet::load_defaults_newlines();
-            ps.find_syntax_by_extension(l)
-        },
-        None => None,
-    };
-
-    // Use pretty print or fallback to plain output
-}
-
-/// Prints a string to the console in a distinct color for system messages.
-pub fn print_system_message(msg: &str) {
-    println!("{}", msg.bright_red());
-}
-
-/// Prints a string to the console in a distinct color for user messages.
-pub fn print_user_message(msg: &str) {
-    println!("{}", msg.bright_green());
-}
-
-pub fn color_markdown(text: &str) -> String {
-    let mut result = text.to_string();
-
-    // Headers (## Header)
-    let re_header = Regex::new(r"(?m)^(#{1,6})\s*(.*)").unwrap();
-    result = re_header.replace_all(&result, |caps: &regex::Captures| {
-        let level = caps[1].len();
-        let content = &caps[2];
-        match level {
-            1 => content.bold().bright_white().to_string(),
-            2 => content.bold().bright_blue().to_string(),
-            3 => content.bold().cyan().to_string(),
-            _ => content.italic().dimmed().to_string(),
+    // Trailing markdown after last block
+    if cursor < resp.len() {
+        let tail = &resp[cursor..];
+        if !tail.trim().is_empty() {
+            println!("{}", color_markdown(tail));
         }
+    }
+}
+
+/// Lightweight ANSI styling for markdown subsets.
+pub fn color_markdown(text: &str) -> String {
+    let mut out = text.to_string();
+
+    // Headers
+    out = MD_HEADER_RE.replace_all(&out, |caps: &regex::Captures| {
+        match caps[1].len() {
+            1 => caps[2].bold().bright_white(),
+            2 => caps[2].bold().bright_blue(),
+            3 => caps[2].bold().cyan(),
+            _ => caps[2].italic().dimmed(),
+        }.to_string()
     }).to_string();
 
-    // Bold **text**
-    let re_bold = Regex::new(r"\*\*(.*?)\*\*").unwrap();
-    result = re_bold.replace_all(&result, |caps: &regex::Captures| {
-        caps[1].bold().to_string()
-    }).to_string();
+    // Bold, then italic (order avoids overlap issues)
+    out = MD_BOLD_RE.replace_all(&out, |c: &regex::Captures| c[1].bold().to_string()).to_string();
+    out = MD_ITALIC_RE.replace_all(&out, |c: &regex::Captures| c[1].italic().to_string()).to_string();
 
-    // Italic *text* (do this AFTER bold, now we don’t care about overlap)
-    let re_italic = Regex::new(r"\*(.*?)\*").unwrap();
-    result = re_italic.replace_all(&result, |caps: &regex::Captures| {
-        caps[1].italic().to_string()
-    }).to_string();
-
-    // Lists (- item)
-    let re_list = Regex::new(r"(?m)^[-*]\s+(.*)").unwrap();
-    result = re_list.replace_all(&result, |caps: &regex::Captures| {
-        format!("• {}", &caps[1].bright_green())
+    // Lists
+    out = MD_LIST_RE.replace_all(&out, |c: &regex::Captures| {
+        format!("• {}", c[1].bright_green())
     }).to_string();
 
     // Blockquotes
-    let re_quote = Regex::new(r"(?m)^>\s+(.*)").unwrap();
-    result = re_quote.replace_all(&result, |caps: &regex::Captures| {
-        format!("┃ {}", &caps[1].bright_magenta())
+    out = MD_QUOTE_RE.replace_all(&out, |c: &regex::Captures| {
+        format!("┃ {}", c[1].bright_magenta())
     }).to_string();
 
-    result
+    out
 }
+
+/// Print code with syntect highlighting; fall back to plain text.
+fn highlight_code(lang: &str, code: &str) {
+    let syntax = SYNTAX_SET
+        .find_syntax_by_extension(lang)
+        .unwrap_or_else(|| SYNTAX_SET.find_syntax_plain_text());
+
+    let mut highlighter = HighlightLines::new(syntax, &THEME);
+    for line in LinesWithEndings::from(code) {
+        let ranges = highlighter.highlight_line(line, &SYNTAX_SET).expect("highlight");
+        print!("{}", as_24_bit_terminal_escaped(&ranges[..], true));
+    }
+}
+
+/// Map user/markdown language tags ➜ syntect extensions.
+fn normalize_lang(lang: &str) -> String {
+    match lang.to_lowercase().as_str() {
+        "python"       => "py",
+        "javascript"   => "js",
+        "typescript"   => "ts",
+        "csharp"       => "cs",
+        "c++"          => "cpp",
+        "shell" | "terminal" | "sh" => "bash",
+        "yaml"         => "yml",
+        "rust"         => "rs",
+        other           => other,
+    }.to_string()
+}
+

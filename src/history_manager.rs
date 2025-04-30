@@ -8,13 +8,11 @@
 
 use std::fs;
 
-use openai_api_rs::v1::chat_completion::{ChatCompletionMessage, Content, MessageRole};
-
-use crate::prompt::SUMMARY_HISTORY_PROMPT;
+use crate::{prompt::SUMMARY_HISTORY_PROMPT, types::{ChatMessage, MessageRole}};
 
 /// Stores and manages the conversation history.
 pub struct History {
-    messages: Vec<ChatCompletionMessage>,
+    messages: Vec<ChatMessage>,
     pub file_path: String,
     max_history: usize,
     summary_size: usize,
@@ -28,7 +26,7 @@ impl History {
     /// * `max_history` - Maximum number of messages to keep.
     /// * `summary_size` - Number of messages to summarize at a time.
     pub fn new(file: &str, max_history: usize, summary_size: usize) -> Self {
-        let messages: Vec<ChatCompletionMessage> = if let Ok(file) = fs::File::open(file) {
+        let messages: Vec<ChatMessage> = if let Ok(file) = fs::File::open(file) {
             serde_json::from_reader(file).unwrap_or_else(|_| Vec::new())
         } else {
             Vec::new()
@@ -42,14 +40,13 @@ impl History {
     }
 
     /// Adds a message to the history.
-    pub fn add_message(&mut self, role: MessageRole, content: Content) {
-        self.messages.push(ChatCompletionMessage {
-            role,
-            content,
-            name: None,
-            tool_call_id: None,
-            tool_calls: None,
-        });
+    pub fn add_message(&mut self, role: MessageRole, content: String) {
+        self.messages.push(
+            ChatMessage {
+                role,
+                content
+            }
+        )
     }
 
     /// Checks if the history needs summarization.
@@ -58,10 +55,10 @@ impl History {
     }
 
     /// Generates a prompt for summarizing the conversation.
-    pub fn get_summarize_prompt(&self) -> String {
+    pub fn get_summarize_prompt(&mut self) -> String {
         if self.messages.len() <= self.summary_size { return "".to_string(); }
 
-        let messages: Vec<ChatCompletionMessage> = self.messages.drain(1..self.summary_size + 1).collect();
+        let messages: Vec<ChatMessage> = self.messages.drain(1..self.summary_size + 1).collect();
         let messages_str = messages.iter().map(|msg| format!("{:?}", msg.content)).collect::<Vec<String>>().join("\n");
 
         format!("{}\n---\n{}", SUMMARY_HISTORY_PROMPT, messages_str)
@@ -69,17 +66,14 @@ impl History {
 
     /// Inserts a summary into the history.
     pub fn insert_summary(&mut self, summary: String) {
-        self.messages.insert(1, ChatCompletionMessage {
-            role: MessageRole::system,
-            content: Content::Text(summary),
-            name: None,
-            tool_call_id: None,
-            tool_calls: None,
+        self.messages.insert(1, ChatMessage {
+            role: MessageRole::System,
+            content: summary,
         });
     }
 
     /// Returns the current history as a vector of messages.
-    pub fn get(&self) -> Vec<ChatCompletionMessage> {
+    pub fn get(&self) -> Vec<ChatMessage> {
         self.messages.clone()
     }
 
@@ -92,7 +86,7 @@ impl History {
 
     /// Loads the history from disk.
     pub fn load(&mut self) {
-        let messages: Vec<ChatCompletionMessage> = if let Ok(file) = fs::File::open(&self.file_path) {
+        let messages: Vec<ChatMessage> = if let Ok(file) = fs::File::open(&self.file_path) {
             serde_json::from_reader(file).unwrap_or_else(|_| Vec::new())
         } else {
             Vec::new()
@@ -106,12 +100,9 @@ impl History {
             self.messages = vec![init];
         } else {
             // If there's no first message, initialize with a safe system prompt
-            self.messages = vec![ChatCompletionMessage {
-                role: MessageRole::system,
-                content: Content::Text(SUMMARY_HISTORY_PROMPT.to_string()),
-                name: None,
-                tool_call_id: None,
-                tool_calls: None,
+            self.messages = vec![ChatMessage {
+                role: MessageRole::System,
+                content: SUMMARY_HISTORY_PROMPT.to_string(),
             }];
         }
 

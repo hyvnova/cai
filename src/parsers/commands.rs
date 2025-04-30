@@ -44,7 +44,7 @@ pub fn parse_commands_block(response: &str, shell: &mut Shell, sys_message: &mut
 
             for command in commands {
                 let command_title = format!(">> {}", command).bold().green();
-                let command_output = shell.run_command(&command, Some(10));
+                let command_output = shell.execute(&command, Some(10));
 
                 // Format command output as a gray, indented block
                 let formatted_output = command_output

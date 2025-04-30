@@ -56,7 +56,7 @@ pub fn parse_say_block(response: &str, shell: &mut Shell) {
             
 
             let output_file = format!("{0}\\{1}.wav", OUTPUT_PATH, i);
-            shell.run_command(&format!("echo \"{0}\" | piper --model \"{1}{2}.onnx\" --config \"{1}{2}.json\" --output_file \"{3}\" -q", text, PIPER_VOICE_PATH, VOICE, output_file), Some(15));
+            shell.execute(&format!("echo \"{0}\" | piper --model \"{1}{2}.onnx\" --config \"{1}{2}.json\" --output_file \"{3}\" -q", text, PIPER_VOICE_PATH, VOICE, output_file), Some(15));
 
 
             // Load a sound from a file, using a path relative to Cargo.toml

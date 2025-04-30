@@ -8,7 +8,7 @@
 use std::io::{ self, BufRead, Write };
 use std::{env, path::PathBuf};
 
-use openai_api_rs::v1::chat_completion::*;
+use colored::Colorize;
 use parsers::{
     commands::parse_commands_block,
     memory::parse_memory_block,
@@ -20,21 +20,23 @@ use parsers::{
 mod prompt;
 use prompt::{ format_sys_prompt, MEMORY_PROMPT, RESUME_PROMPT };
 
-mod memory;
-use memory::MemoryManager;
+mod memory_manager;
+use memory_manager::MemoryManager;
 
-mod history;
-use history::History;
+mod history_manager;
+use history_manager::History;
 
 mod client;
 use client::Client;
 
 mod shell;
 use shell::Shell;
+use types::MessageRole;
 
 mod parsers;
-
 mod client_util;
+mod text_macro;
+mod types;
 
 // ===================== Configuration Constants =====================
 
@@ -45,11 +47,15 @@ const MAX_HISTORY: usize = 28;
 const SUMMARY_SIZE: usize = MAX_HISTORY / 3;
 
 /// Maximum allowed consecutive continue tokens before requiring user input.
-const MAX_CONTINUE: usize = 5;
+const MAX_CONTINUE: usize = 20;
 
 /// Special tokens for control flow in AI responses.
 const RESTART_TOKEN: &str = "$$RESTART$$";
 const CONTINUE_TOKEN: &str = "$$CONTINUE$$";
+
+/// Default model to use if none is specified.
+/// o4-mini | gpt-4.1 | gpt-3.5-turbo
+const DEFAULT_MODEL: &str = "o4-mini-2025-04-16";
 
 // ===============================================================
 /// ## Main Async Entry Point
@@ -59,9 +65,6 @@ const CONTINUE_TOKEN: &str = "$$CONTINUE$$";
 // ===============================================================
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // --- Load API Key from Environment ---
-    let api_key: String = std::env::var("OPENAI_API_KEY")
-        .expect("Missing OPENAI_API_KEY in environment");
 
     // --- Determine Current Working Directory (absolute path) ---
     let current_path: PathBuf = env
@@ -75,15 +78,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ::args()
         .collect::<Vec<String>>()
         .get(1)
-        .unwrap_or(&"gpt-4.1".to_string())
+        .unwrap_or(&DEFAULT_MODEL.to_string())
         .to_string();
 
     // --- Initialize Core Components ---
     let mut ai: Client = Client::new(
         model,
         History::new("history.json", MAX_HISTORY, SUMMARY_SIZE),
-        MemoryManager::new("memory.txt"),
-        &api_key
+        MemoryManager::new("memory.txt")
     );
 
     let mut shell = Shell::new(current_path.to_str().unwrap());
@@ -103,17 +105,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // --- System Prompt or Resume ---
     if ai.history.is_empty() {
         response = ai.send_message(
-            MessageRole::system,
+            MessageRole::System,
             &format_sys_prompt(
                 CONTINUE_TOKEN,
                 RESTART_TOKEN,
-                ai.memory.read(None).as_str(),
-                MEMORY_PROMPT,
+                ai.memory.read(None).as_str(), // Pass memory content
+                MEMORY_PROMPT, // Pass memory instructions
                 current_path.to_str().unwrap()
             )
         ).await;
     } else {
-        response = ai.send_message(MessageRole::system, RESUME_PROMPT).await;
+        response = ai.send_message(MessageRole::System, RESUME_PROMPT).await;
     }
 
     // ===================== CLI Commands =====================
@@ -152,7 +154,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     'mainloop: loop {
         // --- User Input Phase ---
         if continues == 0 {
-            print!("[You]: ");
+            let header = "[You]: ".green().bold();
+            print!("{}", header);
             io::stdout().flush().unwrap();
 
             let mut input: String = String::new();
@@ -173,7 +176,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!();
 
-            response = ai.send_message(MessageRole::user, &input).await;
+            response = ai.send_message(MessageRole::User, &input).await;
         }
 
         // --- AI Response Processing Phase ---
@@ -205,9 +208,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("[SYSTEM] Continuing.");
 
                 if sys_message.is_empty() {
-                    response = ai.send_message(MessageRole::system, "[Continue]").await;
+                    response = ai.send_message(MessageRole::System, "[Continue]").await;
                 } else {
-                    response = ai.send_message(MessageRole::system, &sys_message).await;
+                    response = ai.send_message(MessageRole::System, &sys_message).await;
                 }
                 continues += 1;
 
@@ -215,7 +218,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if continues >= MAX_CONTINUE {
                     continues = 0;
                     response = ai.send_message(
-                        MessageRole::system,
+                        MessageRole::System,
                         "[You've reached the maximum number of continues.]"
                     ).await;
                     break 'processing_loop;
@@ -225,7 +228,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 // If there was a system message, send it and continue processing.
                 if !sys_message.is_empty() {
-                    response = ai.send_message(MessageRole::system, &sys_message).await;
+                    response = ai.send_message(MessageRole::System, &sys_message).await;
                 }
                 // Reset continue counter if needed.
                 if continues != 0 {
