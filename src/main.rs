@@ -6,9 +6,10 @@
 //! ===============================================================
 
 use std::io::{ self, BufRead, Write };
-use std::{env, path::PathBuf};
+use std::{ env, path::PathBuf };
 
 use colored::Colorize;
+use input_reading::read_user_input;
 use parsers::{
     commands::parse_commands_block,
     memory::parse_memory_block,
@@ -37,6 +38,7 @@ mod parsers;
 mod client_util;
 mod text_macro;
 mod types;
+mod input_reading;
 
 // ===================== Configuration Constants =====================
 
@@ -65,13 +67,23 @@ const DEFAULT_MODEL: &str = "o4-mini-2025-04-16";
 // ===============================================================
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     // --- Determine Current Working Directory (absolute path) ---
-    let current_path: PathBuf = env
+    let mut current_path: PathBuf = env
         ::current_dir()
         .expect("Couldn't optain current dir path.")
         .canonicalize()
         .expect("Failed to create absolute path of current directory");
+
+    // If in debug mode, create a test directory for the AI to work in.
+    if cfg!(debug_assertions) {
+        // Check if the directory exists, if not, create it.
+        if !current_path.join("ai_test_dir").exists() {
+            std::fs
+                ::create_dir_all(current_path.join("ai_test_dir"))
+                .expect("Failed to create test directory.");
+        }
+        current_path = current_path.join("ai_test_dir");
+    }
 
     // --- Select Model (default: gpt-4.1) ---
     let model: String = std::env
@@ -158,9 +170,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             print!("{}", header);
             io::stdout().flush().unwrap();
 
-            let mut input: String = String::new();
-            io::stdin().lock().read_line(&mut input).unwrap();
-            let mut input: String = input.trim().to_string();
+            let mut input: String = read_user_input().expect("Failed to read user input.");
 
             // Provide a default message if input is empty.
             if input.is_empty() {
@@ -191,7 +201,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut sys_message: String = String::new();
 
             // --- Parse and Execute Special Blocks ---
-            parse_write_block(&response); // Handles file write instructions
+
+            // Handles file write instructions
+            if let Err(e) = parse_write_block(&response) {
+                // Add to response the failure message
+                sys_message.push_str(&format!("[Write Block Failed]\n{}\n", e));
+            }
             parse_say_block(&response, &mut shell); // Handles voice/say instructions
             parse_commands_block(&response, &mut shell, &mut sys_message); // Handles shell commands
             parse_memory_block(&response, &mut ai, &mut sys_message); // Handles memory updates

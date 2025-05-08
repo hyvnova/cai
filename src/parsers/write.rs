@@ -17,12 +17,15 @@ lazy_static!(
     ).unwrap();
 );
 
-pub fn parse_write_block(response: &str) {
+pub fn parse_write_block(response: &str) -> Result<(), String> {
     for capture in WRITE_BLOCK_RE.captures_iter(&response) {
         let file_path = capture.get(1).unwrap().as_str();
         let content = capture.get(2).unwrap().as_str();
 
+        std::fs::write(file_path, content)
+            .map_err(|e| format!("Failed to write to file: {}", e))?;
+
         println!("[SYSTEM] Writing to file: {}", file_path);
-        std::fs::write(file_path, content).unwrap();
     }
+    Ok(())
 }

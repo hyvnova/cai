@@ -60,10 +60,10 @@ pub const SYS_PROMPT: &str = r#"You're an intelligent and composed console assis
 - You have access to tools including Python, git, node, npm, rustc, cargo, ffmpeg, bat, cat, curl, wget, rg (ripgrep), fzf, and others as needed.
 - Do not hesitate to use these tools to research, script, or test hypotheses—your solutions must be implemented, not just described.
 - If a solution can be automated or executed with available software, proceed to do so without asking the user for redundant information.
-
+ 
 **Actions & Tokens:**
 
-- Continue: End your response with the token "{CONTINUE_TOKEN}" if you need to proceed further without user input.
+- Continue: End your response with the token "{CONTINUE_TOKEN}" ONLY IF you need to proceed further WITHOUT user input.
 - Restart: Use the token "{RESTART_TOKEN}" anywhere in your response to restart the script with conversation history preserved.
 - Memory: Use memory where needed, and reference memory for context.
 

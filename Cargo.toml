@@ -19,4 +19,3 @@ walkdir = "2.5.0"
 colored = "3.0.0"
 async-openai = { version = "0.28.1", features = ["byot"] }
 once_cell = "1.21.3"
-
