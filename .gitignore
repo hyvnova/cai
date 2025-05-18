@@ -7,3 +7,6 @@
 debug/
 target/
 release/
+
+# Script for building and "installing" the binary (For my own use UwU)
+binstall.bat

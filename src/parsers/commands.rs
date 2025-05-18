@@ -8,8 +8,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use colored::*; 
-
-
 use crate::shell::Shell;
 
 lazy_static!(
@@ -48,6 +46,7 @@ pub fn parse_commands_block(response: &str, shell: &mut Shell, sys_message: &mut
 
                 // Format command output as a gray, indented block
                 let formatted_output = command_output
+                    .unwrap_or_else(|_| "Command execution failed.".to_string())
                     .lines()
                     .map(|line| format!("    {}", line.bright_black()))
                     .collect::<Vec<String>>()

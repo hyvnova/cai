@@ -18,27 +18,39 @@ use parsers::{
 };
 
 // ===================== Local Modules =====================
+// Contains the prompt templates and instructions
 mod prompt;
 use prompt::{ format_sys_prompt, MEMORY_PROMPT, RESUME_PROMPT };
 
+// Memory module -- handles memory management
 mod memory_manager;
 use memory_manager::MemoryManager;
 
+// Handles the history of messages
 mod history_manager;
 use history_manager::History;
 
+// Client module -- handles AI interactions
 mod client;
 use client::Client;
 
+// Contains the shell -- used to run commands
 mod shell;
 use shell::Shell;
 use types::MessageRole;
 
+// Contains the parsers for different blocks in AI responses
 mod parsers;
+
 mod client_util;
 mod text_macro;
 mod types;
+
+// Reading user input
 mod input_reading;
+
+// Contains the shell implementations for different platforms
+pub mod shells;
 
 // ===================== Configuration Constants =====================
 
@@ -100,7 +112,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         MemoryManager::new("memory.txt")
     );
 
-    let mut shell = Shell::new(current_path.to_str().unwrap());
+    let mut shell: Shell = Shell::new(current_path.to_str().unwrap()).expect("Failed to create shell. *cries*");
 
     /*
     ---------------------------------------------------------------

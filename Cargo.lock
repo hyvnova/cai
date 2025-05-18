@@ -49,6 +49,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.98"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -194,6 +200,24 @@ name = "bytes"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
+
+[[package]]
+name = "cai"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "colored",
+ "lazy_static",
+ "once_cell",
+ "regex",
+ "rodio",
+ "serde",
+ "serde_json",
+ "syntect",
+ "tokio",
+ "walkdir",
+]
 
 [[package]]
 name = "cc"
@@ -1222,8 +1246,7 @@ dependencies = [
 [[package]]
 name = "onig_sys"
 version = "69.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b829e3d7e9cc74c7e315ee8edb185bf4190da5acde74afd7fc59c35b1f086e7"
+source = "git+https://github.com/rust-onig/rust-onig?branch=main#c4378abcbf30d58cf5f230c0d2e6375f2be05a47"
 dependencies = [
  "cc",
  "pkg-config",
@@ -1405,23 +1428,6 @@ name = "r-efi"
 version = "5.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
-
-[[package]]
-name = "rai"
-version = "0.1.0"
-dependencies = [
- "async-openai",
- "colored",
- "lazy_static",
- "once_cell",
- "regex",
- "rodio",
- "serde",
- "serde_json",
- "syntect",
- "tokio",
- "walkdir",
-]
 
 [[package]]
 name = "rand"
