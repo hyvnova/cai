@@ -25,14 +25,6 @@ A simple Rust command-line tool for interacting with AI models (like OpenAI's GP
 
 ---
 
-## Memory Usage
-- Add:   ```memory[add] ... ```
-- Update: ```memory[update] pattern\nreplacement ```
-- Delete: ```memory[delete] pattern ```
-- View:   ```memory[view] [optional pattern] ```
-
----
-
 ## Requirements
 - Rust (stable)
 - OpenAI API key
