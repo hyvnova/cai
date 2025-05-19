@@ -14,9 +14,18 @@ A simple Rust command-line tool for interacting with AI models (like OpenAI's GP
 
 ## Getting Started
 1. Set your API key:
+   Linux/Mac:
    ```sh
-   set OPENAI_API_KEY=your-key-here
+   export OPENAI_API_KEY=your-key-here
    ```
+
+   Windows:
+   ```sh
+   set OPEN
+   AI_API_KEY=your-key-here
+   ```
+
+
 2. Run the program:
    ```sh
    cargo run --release

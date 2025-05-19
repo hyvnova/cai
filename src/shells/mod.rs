@@ -1,8 +1,10 @@
 pub mod util;
 
-pub mod powershell;
-pub use powershell::PowerShell;
 
-pub mod sh;
+
+#[cfg(windows)]
+pub mod powershell;
+
+
 #[cfg(unix)]
-pub use sh::ShShell;
+pub mod sh;

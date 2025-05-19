@@ -13,9 +13,11 @@ use input_reading::read_user_input;
 use parsers::{
     commands::parse_commands_block,
     memory::parse_memory_block,
-    voice::parse_say_block,
     write::parse_write_block,
 };
+
+#[cfg(feature = "voice")]
+use parsers::voice::parse_say_block;
 
 // ===================== Local Modules =====================
 // Contains the prompt templates and instructions
@@ -71,6 +73,16 @@ const CONTINUE_TOKEN: &str = "$$CONTINUE$$";
 /// o4-mini | gpt-4.1 | gpt-3.5-turbo
 const DEFAULT_MODEL: &str = "o4-mini-2025-04-16";
 
+
+/// Language and OS for the AI to use in its responses.
+const LANGUAGE: &str = "Español (Incluyendo jerga y modismos contemporáneos propios de la juventud).";
+
+#[cfg(unix)]
+const OS: &str = "Linux (Ubuntu 22.04)";
+
+#[cfg(windows)]
+const OS: &str = "Windows 11";
+
 // ===============================================================
 /// ## Main Async Entry Point
 ///
@@ -79,6 +91,15 @@ const DEFAULT_MODEL: &str = "o4-mini-2025-04-16";
 // ===============================================================
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // --- Ensure a OPENAI_API_KEY is set in the environment ---
+    if env::var("OPENAI_API_KEY").is_err() {
+        let title = "[ERROR] OPENAI_API_KEY not set in the environment.".red().bold();
+        eprintln!("{}\n", title);
+        eprintln!("Please set it before running the program.");
+        return Ok(());
+    }
+
+
     // --- Determine Current Working Directory (absolute path) ---
     let mut current_path: PathBuf = env
         ::current_dir()
@@ -135,7 +156,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 RESTART_TOKEN,
                 ai.memory.read(None).as_str(), // Pass memory content
                 MEMORY_PROMPT, // Pass memory instructions
-                current_path.to_str().unwrap()
+                current_path.to_str().unwrap(),
+                LANGUAGE,
+                OS,
             )
         ).await;
     } else {
@@ -219,7 +242,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Add to response the failure message
                 sys_message.push_str(&format!("[Write Block Failed]\n{}\n", e));
             }
+
+            #[cfg(feature = "voice")]
             parse_say_block(&response, &mut shell); // Handles voice/say instructions
+
             parse_commands_block(&response, &mut shell, &mut sys_message); // Handles shell commands
             parse_memory_block(&response, &mut ai, &mut sys_message); // Handles memory updates
 

@@ -19,13 +19,6 @@ const VOICE: &str = "kris";
 const OUTPUT_PATH: &str =
     r"C:\Users\Hyvnt\T\Rust\console-ai-framework\voice";
 
-/// ─────────────────────────────────────────────────────────────
-/// Stub when the `voice` feature is *not* enabled
-/// ─────────────────────────────────────────────────────────────
-#[cfg(not(feature = "voice"))]
-pub fn parse_say_block(_response: &str, _shell: &mut Shell) {
-    // no-op
-}
 
 /// ─────────────────────────────────────────────────────────────
 /// Real implementation when the `voice` feature *is* enabled

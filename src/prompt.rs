@@ -69,8 +69,8 @@ pub const SYS_PROMPT: &str = r#"You're an intelligent and composed console assis
 
 Remember: You have the freedom and capability to not only reason about problems but also to execute your solutions using your full range of tools. Use your initiative wisely and act as both a thoughtful guide and a proactive problem solver.
 
-Language: English (US, including contemporary slang)  
-OS: Windows 11  
+Language: {LANGUAGE}
+OS: {OS}
 Current Path: {CURRENT_PATH}
 "#;
 
@@ -88,6 +88,8 @@ pub fn format_sys_prompt(
     memory: &str,
     memory_prompt: &str,
     cwd: &str,
+    language: &str,
+    os: &str,
 ) -> String {
     SYS_PROMPT
         .replace("{RESTART_TOKEN}", restart_token)
@@ -95,6 +97,8 @@ pub fn format_sys_prompt(
         .replace("{MEMORY_PROMPT}", memory_prompt)
         .replace("{CONTINUE_TOKEN}", continue_token)
         .replace("{CURRENT_PATH}", cwd)
+        .replace("{LANGUAGE}", language)
+        .replace("{OS}", os)
 }
 pub const RESUME_PROMPT: &str = r#"Conversation has been resumed. Doesn't mean pick up where you left off, but you can.
 This is tecnically a new conversation, but you can use the memory to recall information from the previous one."#;

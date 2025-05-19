@@ -18,11 +18,11 @@ impl Shell {
         let inner: Box<dyn ShellBackend> = {
             #[cfg(windows)]
             {
-                Box::new(shells::PowerShell::spawn(cwd)?)
+                Box::new(shells::powershell::PowerShell::spawn(cwd)?)
             }
             #[cfg(unix)]
             {
-                Box::new(shells::ShShell::spawn(cwd)?)
+                Box::new(shells::sh::ShShell::spawn(cwd)?)
             }
         };
 
