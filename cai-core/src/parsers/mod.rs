@@ -6,7 +6,11 @@
 //! Provides a unified interface for block parsing in the CLI loop.
 //! ===============================================================
 
-pub mod commands;
-pub mod memory;
-pub mod voice;
-pub mod write;
+mod commands;
+pub use commands::parse_commands_block;
+
+mod memory;
+pub use memory::parse_memory_block;
+
+mod write;
+pub use write::parse_write_block;

@@ -16,3 +16,4 @@ cai_core = { path = "../cai-core" }
 # Optional UIs
 cai_cli = { path = "../cai-cli", optional = true }
 cai_app = { path = "../cai-app/src-tauri", optional = true }
+tokio = { version = "1.45.0", features = ["full"] }

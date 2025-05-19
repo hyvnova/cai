@@ -7,8 +7,7 @@
 
 use lazy_static::lazy_static;
 use regex::Regex;
-use colored::*; 
-use crate::shell::Shell;
+use crate::{shell::Shell, ui_trait::{MsgType, MsgRole, UIBase}};
 
 lazy_static!(
     static ref COMMANDS_BLOCK_RE: Regex = Regex::new(
@@ -17,7 +16,7 @@ lazy_static!(
 );
 
 
-pub fn parse_commands_block(response: &str, shell: &mut Shell, sys_message: &mut String) {
+pub fn parse_commands_block(ui: &dyn UIBase, response: &str, shell: &mut Shell, sys_message: &mut String) {
     if COMMANDS_BLOCK_RE.is_match(response) {
         let blocks = COMMANDS_BLOCK_RE.find_iter(response);
 
@@ -34,33 +33,36 @@ pub fn parse_commands_block(response: &str, shell: &mut Shell, sys_message: &mut
             })
             .collect::<Vec<String>>();
 
-        println!("[SYSTEM] Executing {} commands.", commands.len());
-
+        ui.print_message(
+            MsgRole::System,
+            MsgType::Plain(format!("[SYSTEM] Executing {} commands.", commands.len())),
+        );
+        
         if !commands.is_empty() {
-            let header = "[Command Execution Results]".bold().underline().bright_blue();
-            sys_message.push_str(&format!("{}\n", header));
+            let title = "[Command Execution Results]";
+            sys_message.push_str(&format!("{}\n", title));
+            
+            let mut ui_content_children: Vec<String> = Vec::with_capacity(commands.len());
 
             for command in commands {
-                let command_title = format!(">> {}", command).bold().green();
-                let command_output = shell.execute(&command, Some(10));
-
-                // Format command output as a gray, indented block
-                let formatted_output = command_output
-                    .unwrap_or_else(|_| "Command execution failed.".to_string())
-                    .lines()
-                    .map(|line| format!("    {}", line.bright_black()))
-                    .collect::<Vec<String>>()
-                    .join("\n");
-
-                // Print nicely formatted output
-                println!("{}", command_title);
-                println!("{}", formatted_output);
+                let command_output = shell.execute(&command, Some(10))
+                    .unwrap_or_else(|_| "Command execution failed.".to_string());
 
                 // Push to sys_message
-                sys_message.push_str(&format!("{}\n{}\n\n", command_title, formatted_output));
+                let content = format!("{} -> {}\n", command, command_output);
+                sys_message.push_str(&content);
+
+                ui_content_children.push(content);
             }
 
-            sys_message.push_str("\n");
+            // Print the command output
+            ui.print_message(
+                MsgRole::System,
+                MsgType::TitleChildren {
+                    title: title.to_string(),
+                    content: ui_content_children,
+                },
+            );
         }
     }
 }

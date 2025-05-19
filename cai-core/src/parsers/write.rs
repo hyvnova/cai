@@ -1,6 +1,8 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::ui_trait::{MsgRole, MsgType, UIBase};
+
 // Write block parser
 // Writing block look like this:
 // ```write[some/file/path.txt]
@@ -17,7 +19,7 @@ lazy_static!(
     ).unwrap();
 );
 
-pub fn parse_write_block(response: &str) -> Result<(), String> {
+pub fn parse_write_block(ui: &dyn UIBase, response: &str) -> Result<(), String> {
     for capture in WRITE_BLOCK_RE.captures_iter(&response) {
         let file_path = capture.get(1).unwrap().as_str();
         let content = capture.get(2).unwrap().as_str();
@@ -25,7 +27,7 @@ pub fn parse_write_block(response: &str) -> Result<(), String> {
         std::fs::write(file_path, content)
             .map_err(|e| format!("Failed to write to file: {}", e))?;
 
-        println!("[SYSTEM] Writing to file: {}", file_path);
+        ui.print_message(MsgRole::System, MsgType::Plain(format!("Writing to file: {}", file_path)));
     }
     Ok(())
 }

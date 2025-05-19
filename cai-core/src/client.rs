@@ -6,9 +6,9 @@
 //! Provides a clean interface for the CLI to communicate with the AI.
 //! ===============================================================
 
-use crate::client_util::enhanced_print;
-use crate::text;
 use crate::types::MessageRole;
+use crate::ui_trait::MsgType;
+use crate::ui_trait::{MsgRole, UIBase};
 use crate::{ history_manager::History, memory_manager::MemoryManager };
 use colored::*;
 
@@ -82,7 +82,7 @@ impl Client {
     /// # Arguments
     /// * `role` - The role of the message sender (user/system).
     /// * `content` - The message content.
-    pub async fn send_message(&mut self, role: MessageRole, content: &str) -> String {
+    pub async fn send_message(&mut self, ui: &dyn UIBase, role: MessageRole, content: &str) -> String {
         self.history.add_message(role, content.to_string());
 
         // * Keep history small but informative
@@ -93,11 +93,12 @@ impl Client {
                     self.history.insert_summary(format!("[Conversation summary]\n{}", summary));
                 }
                 Err(e) => {
-                    // Print error message in red
-                    println!(
-                        "{}",
-                        text!("[ERROR] Summarization failed:".bold().red(), e.to_string().red())
+
+                    ui.print_message(
+                        MsgRole::System,
+                        MsgType::Plain(format!("[ERROR] Summarization failed: {}", e.to_string())),
                     );
+
                     // Save history to disk
                     self.history.save();
                     // Exit the program
@@ -159,11 +160,10 @@ impl Client {
        if let Some(content) = response["choices"][0]["message"]["content"].as_str() {
             self.history.add_message(MessageRole::Assistant, content.to_string());
 
-            let header = "[A. ]".bold().blue();
-            println!("{}", &header);
-            enhanced_print(&content);
-            println!("\x1b[0m");
-            println!();
+            ui.print_message(
+                MsgRole::Assistant,
+                MsgType::Plain(content.to_string()),
+            );
 
             return content.to_string();
         } else {

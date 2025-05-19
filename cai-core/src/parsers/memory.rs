@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::{client::Client, prompt::MEMORY_PROMPT};
+use crate::{client::Client, prompt::MEMORY_PROMPT, ui_trait::{MsgRole, MsgType, UIBase}};
 
 lazy_static::lazy_static! {
     static ref MEMORY_BLOCK_RE: Regex = Regex::new(
@@ -8,7 +8,7 @@ lazy_static::lazy_static! {
     ).unwrap();
 }
 
-pub fn parse_memory_block(response: &str, ai: &mut Client, sys_message: &mut String) {
+pub fn parse_memory_block(ui: &dyn UIBase, response: &str, ai: &mut Client, sys_message: &mut String) {
     if MEMORY_BLOCK_RE.is_match(&response) {
         // Per each memory block, extract the action and content
         // Then, perform the action on the memory
@@ -36,12 +36,23 @@ pub fn parse_memory_block(response: &str, ai: &mut Client, sys_message: &mut Str
                 "view" => {
                     let pat = if content.trim().is_empty() { None } else { Some(content) };
 
-                    sys_message.push_str(&format!("[Memory View]\n{}\n", ai.memory.read(pat)));
+                    let content = format!("[Memory View]\n{}\n", ai.memory.read(pat));
+                    sys_message.push_str(content.as_str());
+                    ui.print_message(
+                        MsgRole::System,
+                        MsgType::Plain(content),
+                    );
                 }
                 _ => {
-                    println!("[SYSTEM] Invalid memory action: {}", action);
+                    let content =  format!("Invalid memory action {}.\n{}", action, MEMORY_PROMPT);
+
                     sys_message.push_str(
-                        format!("Invalid memory action {}.\n{}", action, MEMORY_PROMPT).as_str()
+                        &content,
+                    );
+
+                    ui.print_message(
+                        MsgRole::System,
+                        MsgType::Plain(content),
                     );
                 }
             }

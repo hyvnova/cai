@@ -5,3 +5,7 @@ edition = "2021"
 
 [dependencies]
 cai_core = { path = "../cai-core" }
+colored = "3.0.0"
+once_cell = "1.21.3"
+regex = { version = "1", default-features = false, features = ["unicode"] }
+syntect = "5.2.0"
