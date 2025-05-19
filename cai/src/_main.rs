@@ -91,6 +91,7 @@ const OS: &str = "Windows 11";
 // ===============================================================
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
     // --- Ensure a OPENAI_API_KEY is set in the environment ---
     if env::var("OPENAI_API_KEY").is_err() {
         let title = "[ERROR] OPENAI_API_KEY not set in the environment.".red().bold();
@@ -295,6 +296,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
+
+
     }
 
     Ok(())

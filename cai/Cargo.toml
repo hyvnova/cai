@@ -1,0 +1,18 @@
+[package]
+name    = "cai"
+version = "0.1.0"
+edition = "2021"
+description = "Cai -- a *thing* that does *something* with AI"
+default-run = "cai"
+
+[features]
+default = ["cli"]
+cli = ["cai_cli"]
+app = ["cai_app"]
+
+[dependencies]
+cai_core = { path = "../cai-core" }
+
+# Optional UIs
+cai_cli = { path = "../cai-cli", optional = true }
+cai_app = { path = "../cai-app/src-tauri", optional = true }

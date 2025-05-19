@@ -1,16 +1,14 @@
 
-[package]
-name    = "cai"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+    "cai",
+    "cai-core",
+    "cai-cli",
+    "cai-app/src-tauri",
+]
 
-# ─────────────── Features ───────────────
-[features]
-default = []
-voice   = ["rodio", "cpal"]
-
-# ─────────────── Deps ───────────────
-[dependencies]
+# optional shared dependencies across the whole workspace
+[workspace.dependencies]
 serde        = { version = "1.0", features = ["derive"] }
 serde_json   = "1.0"
 regex        = "1"
@@ -23,13 +21,11 @@ async-openai = { version = "0.28.1", features = ["byot"] }
 once_cell    = "1.21.3"
 anyhow       = "1.0.98"
 
-# ― optional audio stack (only compiled when `voice` feature is enabled)
-rodio = { version = "0.20.1", optional = true, default-features = false }
-cpal  = { version = "0.15",   optional = true, default-features = false }
 
-# ──────────────────────────────────────────────────────────────
-# Fix GCC-14 breakage in onig_sys / Oniguruma
-# (remove once crates.io publishes a ≥ 69.9 release)
-# ──────────────────────────────────────────────────────────────
+[workspace.features]
+default = ["cli"]
+app     = []
+cli     = []
+
 [patch.crates-io]
 onig_sys = { git = "https://github.com/rust-onig/rust-onig", branch = "main" }

@@ -14,6 +14,7 @@ A simple Rust command-line tool for interacting with AI models (like OpenAI's GP
 
 ## Getting Started
 1. Set your API key:
+
    Linux/Mac:
    ```sh
    export OPENAI_API_KEY=your-key-here

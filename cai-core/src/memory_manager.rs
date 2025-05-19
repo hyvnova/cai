@@ -6,8 +6,6 @@
 //! Used to provide context and continuity across sessions.
 //! ===============================================================
 
-use std::fs::{ self, OpenOptions };
-use std::io::Write;
 
 use regex::Regex;
 

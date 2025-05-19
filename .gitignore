@@ -10,3 +10,9 @@ release/
 
 # Script for building and "installing" the binary (For my own use UwU)
 binstall.bat
+
+# Exactly what it says
+/ai_test_dir
+
+# AI chat history
+history.json

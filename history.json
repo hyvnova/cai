@@ -6,5 +6,21 @@
   {
     "role": "assistant",
     "content": "Hola, ¿qué tal? Soy tu asistente Kuudere-Onee-san: fresca, precisa y siempre lista para arremangarme el código. ¿En qué proyecto o reto técnico quieres que te eche una mano hoy?"
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "¡Hola de nuevo! Listísima para lanzarme al siguiente desafío. ¿En qué proyecto o reto técnico te gustaría que trabajemos hoy?"
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "¡Saludos de nuevo! Lista y en guardia. ¿Quieres retomar algún proyecto anterior o arrancamos algo nuevo desde cero? Dime cómo te ayudo hoy."
   }
 ]

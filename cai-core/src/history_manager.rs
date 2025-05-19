@@ -84,15 +84,15 @@ impl History {
         }
     }
 
-    /// Loads the history from disk.
-    pub fn load(&mut self) {
-        let messages: Vec<ChatMessage> = if let Ok(file) = fs::File::open(&self.file_path) {
-            serde_json::from_reader(file).unwrap_or_else(|_| Vec::new())
-        } else {
-            Vec::new()
-        };
-        self.messages = messages;
-    }
+    /// Loads the history from disk. -- not used since we load it in the constructor
+    // pub fn load(&mut self) {
+    //     let messages: Vec<ChatMessage> = if let Ok(file) = fs::File::open(&self.file_path) {
+    //         serde_json::from_reader(file).unwrap_or_else(|_| Vec::new())
+    //     } else {
+    //         Vec::new()
+    //     };
+    //     self.messages = messages;
+    // }
 
     /// Clears the history.
     pub fn clear(&mut self) {

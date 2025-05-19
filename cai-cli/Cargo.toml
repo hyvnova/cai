@@ -1,0 +1,7 @@
+[package]
+name = "cai_cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cai_core = { path = "../cai-core" }
