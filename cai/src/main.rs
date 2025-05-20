@@ -5,7 +5,6 @@
 //! and coordinates memory, history, and command parsing modules.
 //! ===============================================================
 
-use std::io::{ self, BufRead, Write };
 use std::{ env, path::PathBuf };
 
 
@@ -26,15 +25,20 @@ use cai_core::{
     types::MessageRole,
 
     // Handles the history of messages
-    history_manager::History,
+    // Somehow we don't need to import this module -- WOW
+    // history_manager::History,
 
     // Memory module -- handles memory management
     memory_manager::MemoryManager,
 };
 
 
+// ===================== Selecting UI =====================
 #[cfg(feature = "cli")]
 use cai_cli::UI;
+
+#[cfg(feature = "app")]
+use cai_app_lib::UI; // Here we use lib because in tauri project main.rs it's entry for tauri and lib is for being able to import from here
 
 // ===================== Configuration Constants =====================
 
@@ -72,12 +76,14 @@ const OS: &str = "Windows 11";
 /// Initializes all core components and runs the main CLI loop.
 /// Handles user input, AI responses, and special command parsing.
 // ===============================================================
-#[cfg(feature = "cli")]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use cai_core::{history_manager::History, ui_trait::{MsgRole, MsgType, UIBase}};
 
     let ui: &dyn UIBase = &UI;
+
+    ui.init(); // Initialize the UI -- setup configuration, etc.
+    
 
     // ===== Initialize AI Client and it's utilities =====
      // --- Ensure a OPENAI_API_KEY is set in the environment ---

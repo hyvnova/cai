@@ -26,6 +26,13 @@ pub enum MsgType {
 
 
 pub trait UIBase {
+    
+    /// Will be called to let the UI know that the program is starting
+    /// This is where the UI should initialize itself
+    /// E.g. load config, etc.
+    fn init(&self) -> bool;
+
+
     /// Will be called when user input is needed
     /// Also should print the input
     fn get_user_input(&self) -> String;

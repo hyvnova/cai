@@ -1,156 +1,151 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { listen, emit } from "@tauri-apps/api/event";
+  import { Send } from "@lucide/svelte";
+  import { onMount } from "svelte";
 
-  let name = $state("");
-  let greetMsg = $state("");
+  type MsgRole = "Assistant" | "System" | "Error" | "User";
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
+  type MsgType =
+    | {
+        type: "Plain";
+        content: string;
+      }
+    | {
+        type: "TitleChildren";
+        title: string;
+        content: string[];
+      };
+
+  // Some test data
+  let messages = [
+    {
+      role: "System" as MsgRole,
+      type: {
+        type: "Plain",
+        content: "System message",
+      } as MsgType,
+    },
+
+    {
+      role: "Assistant" as MsgRole,
+      type: {
+        type: "TitleChildren",
+        title: "Assistant message",
+        content: ["Child 1", "Child 2"],
+      } as MsgType,
+    },
+    {
+      role: "Error" as MsgRole,
+      type: {
+        type: "Plain",
+        content: "Error message",
+      } as MsgType,
+    },
+
+    {
+      role: "User" as MsgRole,
+      type: {
+        type: "TitleChildren",
+        title: "User message",
+        content: ["Child 1", "Child 2"],
+      } as MsgType,
+    },
+  ];
+
+
+  let input_enabled = true;
+  let input_value = "";
+
+  listen("request-user-input", async () => {
+    // focus / open your input control
+    const value = await wait_until_send(); // your UI logic
+    // bounce the value back to Rust
+    await invoke("deliver_user_input", { value });
+  });
+
+  async function wait_until_send() {
+    return new Promise((resolve) => {
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Enter") {
+          resolve(input_value);
+          input_enabled = false;
+          window.removeEventListener("keydown", handleKeyDown);
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+    });
   }
+
+
+  onMount(async () => {
+
+    // Listen to server ping to send user input
+    await listen("js please send user input")
+
+  })
+
 </script>
 
-<main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+<main
+  class="bg-black text-white grid grid-cols-1 grid-rows-[5fr_1fr] h-screen w-screen"
+>
+  <!-- Chat cotainer -->
+  <div
+    class="flex flex-col
+    overflow-y-auto
+    p-4 mx-auto
+    w-full
+    max-w-2lg
+    "
+  >
+    {#each messages as message}
+      <!-- Message container -->
+      <div class="flex flex-col p-1 m-1 bg-[#19191a] rounded-md">
+        <div class="text-md font-semibold bg-[#292956] p-1 rounded-sm w-fit">
+          {message.role}
+        </div>
 
-  <div class="row">
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://kit.svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
+        {#if message.type.type === "Plain"}
+          <div class="p-2 rounded-md">{message.type.content}</div>
+        {:else if message.type.type === "TitleChildren"}
+          <div class="p-2 rounded-md">
+            <h3 class="text-lg font-semibold">{message.type.title}</h3>
+
+            <ul class=" pl-4">
+              {#each message.type.content as child}
+                <li>{child}</li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+      </div>
+    {/each}
   </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
 
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
+  <!-- Input container -->
+  <div
+    class="flex flex-row p-1 m-1 bg-[#0d0d0e] rounded-md
+    min-h-[5dvh]
+    items-center
+    justify-center
+    w-auto
+
+    "
+  >
+    <input
+      bind:value={input_value}
+      disabled={!input_enabled}
+      type="text"
+      placeholder="Some high effort prompt..."
+      class="
+        max-w-md
+        p-1
+        bg-[#0b0b14]
+        rounded-md"
+    />
+    <button class="p-1 text-white border-2 bg-[inherit] rounded-full">
+      <Send />
+    </button>
+  </div>
 </main>
-
-<style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
-
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
-}
-
-</style>

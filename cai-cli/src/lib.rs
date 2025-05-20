@@ -9,6 +9,10 @@ use text_enhance::enhanced_print;
 pub struct UI;
 
 impl UIBase for UI {
+    fn init(&self) -> bool {
+        true
+    }
+
     fn get_user_input(&self) -> String {
         let header = "[You]: ".green().bold();
         print!("{}", header);

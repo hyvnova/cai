@@ -1,3 +1,30 @@
+use cai_core::ui_trait::{MsgRole, MsgType, UIBase};
+use tauri::Emitter;
+
+
+
+pub struct UI;
+
+impl UIBase for UI {
+    fn init(&self) -> bool {
+        // Initialize the UI
+        true
+    }
+
+    /// This function acquires user input from frontend
+    /// And appends it to the chat 
+    fn get_user_input(&self) -> String {
+
+        tauri::emi
+
+
+        String::new()
+    }
+
+    fn print_message(&self, message_type: MsgRole, message_format: MsgType) {
+        
+    }
+}
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
 fn greet(name: &str) -> String {
