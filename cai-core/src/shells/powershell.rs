@@ -30,7 +30,7 @@ impl PowerShell {
         let stdout = BufReader::new(child.stdout.take().expect("pwsh stdout"));
 
         // Suppress prompt noise
-        writeln!(stdin, "function prompt {{ '' }}")?;
+        // writeln!(stdin, "function prompt {{ '' }}")?;
         stdin.flush()?;
 
         Ok(Self { child, stdin, stdout })

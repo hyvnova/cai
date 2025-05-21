@@ -57,7 +57,7 @@ const CONTINUE_TOKEN: &str = "$$CONTINUE$$";
 
 /// Default model to use if none is specified.
 /// o4-mini | gpt-4.1 | gpt-3.5-turbo
-const DEFAULT_MODEL: &str = "o4-mini-2025-04-16";
+const DEFAULT_MODEL: &str = "gpt-4.1";
 
 
 /// Language and OS for the AI to use in its responses.

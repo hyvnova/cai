@@ -52,28 +52,33 @@ impl Client {
 
     /// Just a normal system request to the AI, doesn't save the response or uses the history
     pub async fn make_independent_request(&mut self, content: &str) -> Result<String, String> {
-        // Create request arguments
-        let req = CreateCompletionRequestArgs::default()
-            .model(self.model.clone())
-            .prompt(format!("[SYSTEM] {}", content))
-            .max_tokens(INDEPENDENT_MAX_TOKENS)
-            .build()
-            .expect("Failed to build request args");
 
         // Make the request to the AI
-        let result = self.ai
-            .completions()
-            .create(req).await
+        let result: Value = self.ai
+            .chat()
+            .create_byot(
+                json!({
+                    "model": self.model.clone(),
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": format!("[SYSTEM] {}", content)
+                        }
+                    ],
+                    "stream": false,
+                    "max_completion_tokens": INDEPENDENT_MAX_TOKENS,
+                })
+            )
+            .await
             .expect(
-                format!("Failed to get response for independent request: {}", content).as_str()
+                "Failed to get response for independent request"
             );
 
-        Ok(
-            result.choices
-                .first()
-                .map(|choice| choice.text.clone())
-                .unwrap_or_else(|| String::from("[No message]"))
-        )
+        if let Some(content) = result["choices"][0]["message"]["content"].as_str() {
+            return Ok(content.to_string());
+        } else {
+            return Err("[ERROR] No content in response for independent request".to_string());
+        }
     }
 
     /// Sends a message to the AI and returns the response.

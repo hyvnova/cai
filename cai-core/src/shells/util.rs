@@ -1,9 +1,5 @@
 use std::{
-    io::{ BufRead, BufReader, Write },
-    path::{ Path, PathBuf },
-    process::Child,
-    thread,
-    time::{Duration, Instant},
+    borrow::Cow, io::{ BufRead, BufReader, Write }, path::{ Path, PathBuf }, process::Child, thread, time::{Duration, Instant}
 };
 
 use lazy_static::lazy_static;
@@ -20,62 +16,62 @@ fn strip_ansi_codes(s: &str) -> String {
     ANSI_REGEX.replace_all(s, "").to_string()
 }
 
-// ────────────────────────────────────────────────────────────────
-// Shared engine for executing a command and capturing output
-// (keeps the two impls DRY).
-// ────────────────────────────────────────────────────────────────
+/// Run a single shell *command*, capture everything up to the sentinel,
+/// tolerate non-UTF-8 bytes, and optionally time-out.
+///
+/// `timeout_secs == None`  → wait forever.
 pub fn run_command_loop(
     child: &mut Child,
     stdin: &mut std::process::ChildStdin,
     stdout: &mut BufReader<std::process::ChildStdout>,
     command: &str,
-    timeout_secs: Option<u64>
+    timeout_secs: Option<u64>,
 ) -> anyhow::Result<String> {
     const MARKER: &str = "[END_OF_COMMAND_OUTPUT]";
 
-    // 1. send the command
+    // 1. send the command itself
     writeln!(stdin, "{}", command)?;
     stdin.flush()?;
 
-    // 2. send the marker
+    // 2. emit the sentinel
     writeln!(stdin, "echo {}", MARKER)?;
     stdin.flush()?;
 
-    // 3. read until we hit the marker (or timeout / EOF)
+    // 3. read lines (as raw bytes) until we hit the sentinel or a stop-condition
     let start = Instant::now();
-    let mut buf = String::new();
-    let mut line = String::new();
+    let mut buf      = String::new();
+    let mut raw_line = Vec::<u8>::new();
 
     loop {
-        line.clear();
-
         // timeout?
         if let Some(limit) = timeout_secs {
             if start.elapsed() > Duration::from_secs(limit) {
                 let _ = child.kill();
-                buf.push_str(&format!("\n[Execution timed-out after {}s]", limit));
+                let _ = child.wait(); // reap zombie
+                buf.push_str(&format!("\n[Execution timed-out after {limit}s]"));
                 break;
             }
         }
 
-        match stdout.read_line(&mut line) {
-            Ok(0) => {
-                break;
-            } // EOF
+        raw_line.clear();
+        match stdout.read_until(b'\n', &mut raw_line) {
+            Ok(0) => break, // EOF
             Ok(_) => {
+                // convert bytes → string, never error
+                let line: Cow<str> = match std::str::from_utf8(&raw_line) {
+                    Ok(s)  => Cow::Borrowed(s),
+                    Err(_) => Cow::Owned(String::from_utf8_lossy(&raw_line).into_owned()),
+                };
+
                 if line.trim() == MARKER {
                     break;
                 }
                 buf.push_str(&line);
             }
             Err(e) => {
-                buf.push_str(&format!("\n[Shell read error: {}]", e));
+                buf.push_str(&format!("\n[Shell read error: {e}]"));
                 break;
             }
-        }
-
-        if timeout_secs.is_some() {
-            thread::sleep(Duration::from_millis(25));
         }
     }
 
