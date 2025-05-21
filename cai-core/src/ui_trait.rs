@@ -2,14 +2,16 @@
 // UI Interface Implementation
 // Interface for UI's providers must follow to be used as a UI
 // ==========================================================
-
+use serde::{Serialize, Deserialize};
+#[derive(Serialize, Deserialize, Debug)]
 pub enum MsgRole {
     // Since assistant response can contain code blocks, etc, they would be handled in the UI side.
     Assistant,
     System,
     Error,
 }
-
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type", content = "data")]
 pub enum MsgType {
     // Plain text
     Plain(String),

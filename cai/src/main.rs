@@ -38,7 +38,7 @@ use cai_core::{
 use cai_cli::UI;
 
 #[cfg(feature = "app")]
-use cai_app_lib::UI; // Here we use lib because in tauri project main.rs it's entry for tauri and lib is for being able to import from here
+use cai_app::UI; // Here we use lib because in tauri project main.rs it's entry for tauri and lib is for being able to import from here
 
 // ===================== Configuration Constants =====================
 

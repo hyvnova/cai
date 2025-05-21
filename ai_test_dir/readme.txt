@@ -1,4 +1,12 @@
-This is a sort of isolated environment for the AI to create files and test code, etc.
-Needed becase I don't want the AI to accedentally delete the source code.
+# Entorno de Pruebas Aislado
 
-Spoiler: It happened.
+Este proyecto actúa como un *sandbox* completamente separado del código fuente principal, permitiendo al asistente de IA:
+
+- Crear, modificar y ejecutar archivos sin riesgo de afectar sistemas críticos.
+- Probar fragmentos de código en distintos lenguajes (Python, Rust, NodeJS, etc.).
+- Ensayar pipelines de pruebas automáticas y flujos de trabajo de CI/CD.
+
+¿Por qué existe este sandbox?  
+Porque, spoiler, la IA ya logró borrar código importante una vez… y no queremos repetirlo.
+
+¡Siéntete libre de experimentar con cualquier script o herramienta sin pensarlo dos veces!

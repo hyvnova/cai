@@ -10,7 +10,6 @@ use crate::types::MessageRole;
 use crate::ui_trait::MsgType;
 use crate::ui_trait::{MsgRole, UIBase};
 use crate::{ history_manager::History, memory_manager::MemoryManager };
-use colored::*;
 
 use async_openai::{ Client as APIClient, config::OpenAIConfig };
 use async_openai::types::CreateCompletionRequestArgs;
@@ -144,7 +143,7 @@ impl Client {
                     Err(e) => {
                         println!(
                             "[ERROR] Failed to get response: {}",
-                            e.to_string().red()
+                            e.to_string()
                         );
                         self.history.add_message(
                             MessageRole::System,

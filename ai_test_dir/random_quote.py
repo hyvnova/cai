@@ -1,19 +1,22 @@
-# -*- coding: utf-8 -*-
+import json
 import random
-import datetime
+import os
 
-QUOTES = [
-    "The only limit to our realization of tomorrow is our doubts of today. - F. D. Roosevelt",
-    "In the middle of difficulty lies opportunity. - Albert Einstein",
-    "Life is 10% what happens to us and 90% how we react to it. - Charles R. Swindoll",
-    "Do not watch the clock. Do what it does. Keep going. - Sam Levenson",
-    "The future belongs to those who believe in the beauty of their dreams. - E. Roosevelt"
-]
+# Ruta al JSON de citas
+HERE = os.path.dirname(__file__)
+FILE = os.path.join(HERE, 'quotes.json')
+
+def load_quotes(path):
+    with open(path, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 def main():
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    quote = random.choice(QUOTES)
-    print(f"[{now}] {quote}")
+    quotes = load_quotes(FILE)
+    if not quotes:
+        print("No hay citas disponibles.")
+        return
+    quote = random.choice(quotes)
+    print(f"\n💬 {quote}\n")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

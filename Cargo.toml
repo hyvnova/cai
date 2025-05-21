@@ -5,7 +5,7 @@ members = [
     "cai",
     "cai-core",
     "cai-cli",
-    "cai-app/src-tauri",
+    "cai-app/rust-src",
 ]
 
 # optional shared dependencies across the whole workspace

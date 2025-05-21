@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { invoke } from "@tauri-apps/api/core";
-  import { listen, emit } from "@tauri-apps/api/event";
-  import { Send } from "@lucide/svelte";
+import { Send } from "@lucide/svelte";
   import { onMount } from "svelte";
 
   type MsgRole = "Assistant" | "System" | "Error" | "User";
@@ -57,31 +55,10 @@
   let input_enabled = true;
   let input_value = "";
 
-  listen("request-user-input", async () => {
-    // focus / open your input control
-    const value = await wait_until_send(); // your UI logic
-    // bounce the value back to Rust
-    await invoke("deliver_user_input", { value });
-  });
-
-  async function wait_until_send() {
-    return new Promise((resolve) => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        if (event.key === "Enter") {
-          resolve(input_value);
-          input_enabled = false;
-          window.removeEventListener("keydown", handleKeyDown);
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-    });
-  }
 
 
   onMount(async () => {
 
-    // Listen to server ping to send user input
-    await listen("js please send user input")
 
   })
 

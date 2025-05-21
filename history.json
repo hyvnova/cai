@@ -94,5 +94,13 @@
   {
     "role": "assistant",
     "content": "Ya lo hemos visto en acción. Dime cómo quieres avanzar:\n\n1. Modificar la lista de citas (añadir, eliminar o traducir frases).  \n2. Cambiar el formato de salida (JSON, CSV, coloreado en consola…).  \n3. Leer citas desde un archivo externo o una API.  \n4. Registrar todas las citas generadas en un log o base de datos.  \n5. Otra idea que tengas en mente.\n\n¿Qué opción te interesa, o prefieres que proponga algo distinto?"
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "¡Hola de nuevo! ¿Quieres retomar algo del proyecto anterior—como el script de random_quote.py—o prefieres arrancar con algo completamente nuevo? Dime con qué te gustaría empezar hoy."
   }
 ]
