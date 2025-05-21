@@ -25,3 +25,6 @@ pub mod memory_manager;
 
 // Essentially a wrapper around the OpenAI API to respect the rate limits
 pub mod client_util;
+
+// Contains the passive context for the AI -- used to make the AI "think" better
+pub mod passive_context;

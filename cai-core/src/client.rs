@@ -7,6 +7,7 @@
 //! ===============================================================
 
 use crate::client_util::call_with_backoff;
+use crate::passive_context::passive_context;
 use crate::types::MessageRole;
 use crate::ui_trait::MsgType;
 use crate::ui_trait::{MsgRole, UIBase};
@@ -86,6 +87,13 @@ impl Client {
     pub async fn send_message(&mut self, ui: &dyn UIBase, role: MessageRole, content: &str) -> String {
         self.history.add_message(role, content.to_string());
 
+        // Add passive context to the message --
+        // ! REMOVE AFTER REQUEST
+        self.history.add_message(
+            MessageRole::System,
+            passive_context(),
+        );  
+
         // * Keep history small but informative
         if self.history.needs_summarize() {
             let prompt = self.history.get_summarize_prompt(); // Drains messages here
@@ -133,7 +141,9 @@ impl Client {
             })
         ).await;
             
-
+        // ! REMOVING PASSIVE CONTEXT
+        self.history.messages.pop(); 
+        
         match response {
             Ok(content) => {
                 // println!("[DEBUG] Request successful");

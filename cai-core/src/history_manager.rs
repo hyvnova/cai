@@ -12,7 +12,7 @@ use crate::{prompt::SUMMARY_HISTORY_PROMPT, types::{ChatMessage, MessageRole}};
 
 /// Stores and manages the conversation history.
 pub struct History {
-    messages: Vec<ChatMessage>,
+    pub messages: Vec<ChatMessage>,
     pub file_path: String,
     max_history: usize,
     summary_size: usize,
