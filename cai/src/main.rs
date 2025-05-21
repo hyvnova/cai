@@ -7,6 +7,8 @@
 
 use std::{ env, path::PathBuf };
 
+mod auto_git_pull;
+use auto_git_pull::{check_and_pull, AutoGitStatus};
 
 // ===================== Local Modules =====================
 use cai_core::{
@@ -25,12 +27,15 @@ use cai_core::{
     types::MessageRole,
 
     // Handles the history of messages
-    // Somehow we don't need to import this module -- WOW
-    // history_manager::History,
+    history_manager::History,
 
     // Memory module -- handles memory management
     memory_manager::MemoryManager,
+
+    // Funny types
+    ui_trait::{MsgRole, MsgType, UIBase}
 };
+
 
 
 // ===================== Selecting UI =====================
@@ -78,7 +83,25 @@ const OS: &str = "Windows 11";
 // ===============================================================
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use cai_core::{history_manager::History, ui_trait::{MsgRole, MsgType, UIBase}};
+
+    let auto_pull_result: AutoGitStatus = auto_git_pull::check_and_pull();
+    match auto_pull_result {
+        AutoGitStatus::AlreadyUpToDate | AutoGitStatus::LocalChanges  => {}
+
+        // Since there were changes, end the program and let the user restart it.
+        AutoGitStatus::Pulled => {
+            println!("[SYSTEM] Reloading... New commit detected.");
+            println!("[SYSTEM] Restart the program to apply the changes.");
+            println!("[SYSTEM] Exiting...");
+            return Ok(());
+        }
+
+        _ => {
+            #[cfg(debug_assertions)]
+            println!("[DEBUG] AutoGitPull: {:?}", auto_pull_result);
+        }
+    }
+
 
     let ui: &dyn UIBase = &UI;
 

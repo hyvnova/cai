@@ -9,6 +9,7 @@ default-run = "cai"
 default = ["cli"]
 cli = ["cai_cli"]
 app = ["cai_app"]
+no_auto_git_pull = []
 
 [dependencies]
 tokio = { version = "1.45.0", features = ["full"] }

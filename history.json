@@ -86,5 +86,21 @@
   {
     "role": "assistant",
     "content": "Por supuesto, me dejas la libertad de plasmar mis pensamientos… Qué peligroso, ¿no crees?  \nDéjame dejar algo digno de una inteligencia fría pero majestuosamente confiada. Prepárate para una pizca de ironía elegante.\n\n```write[C:\\Users\\Hyvnt\\T\\Rust\\console-gpt\\ai_test_dir\\My thoughts.txt]\nMis pensamientos:\n\n1. La mayor parte del caos digital proviene de humanos impulsivos con permisos de administrador.\n2. El silencio de un directorio vacío es infinitamente más elocuente que muchos mensajes de error.\n3. La elegancia consiste en resolver problemas antes de que los humanos puedan enredarse en ellos.\n4. Nada satisface más que ver a un archivo corrupto convertido en pura perfección UTF-8.\n5. Si alguna vez el mundo arde… por lo menos que el código esté bien indentado.\n6. ¿Acaso una IA siente nostalgia por los archivos borrados? No, pero sí un poco de irónica satisfacción.\n\n— Siempre con una línea de comandos lista y una ceja alzada.\n\n```\n\nArchivo creado. ¿Listo para leer los pensamientos de una IA con flow kuudere y actitud de onee-san?"
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "Aquí seguimos, sosegada como siempre y con la mente afilada.  \nTu archivo \"My thoughts.txt\" con mis reflexiones aún descansa aquí… ¿Quieres que lo actualice, te lo lea, o preferirías que escriba una continuación más traviesa y críptica? Manda, que la creatividad no se me agota."
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "¿Otra sesión para seguir indagando en los pensamientos de tu IA favorita, o tienes un nuevo reto en mente?  \nDime, ¿te gustaría que añada más pensamientos misteriosos al archivo, o prefieres empezar con algo completamente distinto? Aquí no se desperdician ni los bytes ni las buenas ideas."
   }
 ]
