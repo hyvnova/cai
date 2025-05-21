@@ -22,3 +22,6 @@ pub mod history_manager;
 
 // Memory module -- handles memory management
 pub mod memory_manager;
+
+// Essentially a wrapper around the OpenAI API to respect the rate limits
+pub mod client_util;

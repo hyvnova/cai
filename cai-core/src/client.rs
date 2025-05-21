@@ -6,6 +6,7 @@
 //! Provides a clean interface for the CLI to communicate with the AI.
 //! ===============================================================
 
+use crate::client_util::call_with_backoff;
 use crate::types::MessageRole;
 use crate::ui_trait::MsgType;
 use crate::ui_trait::{MsgRole, UIBase};
@@ -17,6 +18,7 @@ use serde_json::{json, Value};
 
 const INDEPENDENT_MAX_TOKENS: u32 = 4000; // Max tokens for independent requests
 const MAX_TOKENS: u32 = 32000; // Max tokens for chat requests
+const MAX_RETRIES: usize = 10; // Max retries for API requests
 
 /// Represents the main AI client for chat interaction.
 pub struct Client {
@@ -24,7 +26,6 @@ pub struct Client {
     pub history: History,
     pub memory: MemoryManager,
     ai: APIClient<OpenAIConfig>,
-    last_req_time: std::time::Instant,
 }
 
 impl Client {
@@ -46,39 +47,35 @@ impl Client {
             history,
             memory,
             ai,
-            last_req_time: std::time::Instant::now(),
         }
     }
 
     /// Just a normal system request to the AI, doesn't save the response or uses the history
     pub async fn make_independent_request(&mut self, content: &str) -> Result<String, String> {
+        let result = call_with_backoff(
+            &self.ai, 
+            json!({
+                "model": self.model.clone(),
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": content
+                    }
+                ],
+                "stream": false,
+                "max_completion_tokens": INDEPENDENT_MAX_TOKENS,
+            })
+        ).await;
+        
+        match result {
+            Ok(content) => {
+                // println!("[DEBUG] Independent request successful");
+                Ok(content)
+            },
 
-        // Make the request to the AI
-        let result: Value = self.ai
-            .chat()
-            .create_byot(
-                json!({
-                    "model": self.model.clone(),
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": format!("[SYSTEM] {}", content)
-                        }
-                    ],
-                    "stream": false,
-                    "max_completion_tokens": INDEPENDENT_MAX_TOKENS,
-                })
-            )
-            .await
-            .expect(
-                "Failed to get response for independent request"
-            );
-
-        if let Some(content) = result["choices"][0]["message"]["content"].as_str() {
-            return Ok(content.to_string());
-        } else {
-            return Err("[ERROR] No content in response for independent request".to_string());
+            Err(()) => Err("Failed to make independent request".to_string()),
         }
+
     }
 
     /// Sends a message to the AI and returns the response.
@@ -111,13 +108,6 @@ impl Client {
             }
         }
 
-
-        // Wait for 1 second before sending the next request
-        let elapsed = std::time::Instant::now().duration_since(self.last_req_time);
-        if elapsed < std::time::Duration::from_secs(1) {
-            std::thread::sleep(std::time::Duration::from_secs(1) - elapsed);
-        }
-
         // --- START DEBUG ---
         // Print the request structure just before sending
         // Use serde_json to attempt serialization and print the result or error
@@ -133,51 +123,35 @@ impl Client {
         // }
         // --- END DEBUG ---
 
-        let response: Value = match self.ai
-                .chat()
-                .create_byot(
-                json!({
-                        "model": self.model.clone(),
-                        "messages": self.history.get(),
-                        "stream": false,
-                        "max_completion_tokens": MAX_TOKENS,
-                    })
-                )
-                .await {
-                    Ok(res) => res,
-                    Err(e) => {
-                        println!(
-                            "[ERROR] Failed to get response: {}",
-                            e.to_string()
-                        );
-                        self.history.add_message(
-                            MessageRole::System,
-                            format!("[ERROR] Failed to get response: {}", e.to_string())
-                        );
-                        return String::from("[No message]");
-                    }
-                };
-                
+        let response = call_with_backoff(
+            &self.ai, 
+            json!({
+                "model": self.model.clone(),
+                "messages": self.history.get(),
+                "stream": false,
+                "max_completion_tokens": MAX_TOKENS,
+            })
+        ).await;
+            
 
-        self.last_req_time = std::time::Instant::now();
-
-       if let Some(content) = response["choices"][0]["message"]["content"].as_str() {
-            self.history.add_message(MessageRole::Assistant, content.to_string());
-
-            ui.print_message(
-                MsgRole::Assistant,
-                MsgType::Plain(content.to_string()),
-            );
-
-            return content.to_string();
-        } else {
-            println!("[ERROR] No content in response.");
-            self.history.add_message(
-                MessageRole::System,
-                format!("[ERROR] No message recieved from assistant")
-            );
-            return String::from("[No message]");
+        match response {
+            Ok(content) => {
+                // println!("[DEBUG] Request successful");
+                self.history.add_message(MessageRole::Assistant, content.to_string());
+                ui.print_message(
+                    MsgRole::Assistant,
+                    MsgType::Plain(content.to_string()),
+                );
+                return content;
+            },
+            Err(()) => {
+                eprintln!("[ERROR] No content in response.");
+                self.history.add_message(
+                    MessageRole::System,
+                    format!("[ERROR] No content in response.")
+                );
+                return String::from("[No message]");
+            }
         }
-        
     }
 }
