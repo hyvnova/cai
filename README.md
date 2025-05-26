@@ -27,8 +27,7 @@ Installation
 
 1. Clone the Repository
 
-git clone https://github.com/your-username/console-ai-framework.git
-cd console-ai-framework
+git clone https://github.com/hyvnova/cai
 
 2. Set Your OpenAI API Key
 
