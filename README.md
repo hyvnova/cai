@@ -1,46 +1,94 @@
-# Console AI Framework
+CAI
 
-A simple Rust command-line tool for interacting with AI models (like OpenAI's GPT) from your terminal. It supports basic conversation, persistent memory, and lets the AI run shell commands or write files if needed.
+A customizable Rust-powered interface to chat with OpenAI's models from your terminal.
+
+This is not just a chatbot—it’s a framework. Designed for developers who want a fast, scriptable way to interact with AI models. It supports persistent memory, command execution, and soon, a full web UI.
+
 
 ---
 
-## Features
-- Chat with an AI model in your terminal
-- Save and recall information between sessions (memory)
-- AI can run shell commands and write files using special blocks
-- Keeps a history of your conversations
+Features
+
+Terminal-based Chat – Communicate directly with OpenAI’s GPT via the console.
+
+Persistent Memory – AI remembers past context between sessions.
+
+Command Execution – Let the AI trigger shell commands securely.
+
+File Writing – AI can write to your local filesystem using code blocks.
+
+Chat History – Automatically saves and loads prior conversations.
+
+
 
 ---
 
-## Getting Started
-1. Set your API key:
+Installation
 
-   Linux/Mac:
-   ```sh
-   export OPENAI_API_KEY=your-key-here
-   ```
+1. Clone the Repository
 
-   Windows:
-   ```sh
-   set OPEN
-   AI_API_KEY=your-key-here
-   ```
+git clone https://github.com/your-username/console-ai-framework.git
+cd console-ai-framework
+
+2. Set Your OpenAI API Key
+
+macOS / Linux
+
+export OPENAI_API_KEY=your-key-here
+
+Windows (CMD)
+
+set OPENAI_API_KEY=your-key-here
+
+> You can also permanently add this to your environment variables for convenience.
 
 
-2. Run the program:
-   ```sh
-   cargo run --release
-   ```
-3. Type your message and press Enter. Type `q` to quit.
+
+3. Build and Run the App
+
+cargo run --release
+
+You're in. Type a message, hit enter. Type q to quit.
+
 
 ---
 
-## Requirements
-- Rust (stable)
-- OpenAI API key
-- Windows (default, but adaptable)
+Requirements
+
+Rust (stable toolchain)
+
+OpenAI API key
+
+Works best on Windows (Linux/macOS support available)
+
+
 
 ---
 
-## License
-MIT
+Roadmap
+
+[x] Console AI chat
+
+[x] Persistent memory
+
+[x] Shell + file command execution
+
+[ ] Web UI (in development)
+
+[ ] Configurable plugins and custom commands
+
+
+
+---
+
+License
+
+MIT. Free to use, modify, or destroy your terminal with.
+
+
+---
+
+> Built for devs who’d rather type than tab
+
+
+
