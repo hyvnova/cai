@@ -20,30 +20,37 @@ fn strip_ansi_codes(s: &str) -> String {
 /// tolerate non-UTF-8 bytes, and optionally time-out.
 ///
 /// `timeout_secs == None`  → wait forever.
+///
+/// **Note**: we now redirect the command’s stderr (file-descriptor 2)
+/// into stdout (file-descriptor 1) so both streams are captured.
 pub fn run_command_loop(
-    child: &mut Child,
-    stdin: &mut std::process::ChildStdin,
+    child:  &mut Child,
+    stdin:  &mut std::process::ChildStdin,
     stdout: &mut BufReader<std::process::ChildStdout>,
     command: &str,
     timeout_secs: Option<u64>,
 ) -> anyhow::Result<String> {
     const MARKER: &str = "[END_OF_COMMAND_OUTPUT]";
 
-    // 1. send the command itself
-    writeln!(stdin, "{}", command)?;
+    //----------------------------------------------------------------------
+    // 1. send the command itself, but push "2>&1" so stderr is folded
+    //----------------------------------------------------------------------
+    writeln!(stdin, "{} 2>&1", command)?;   // <-- change is right here
     stdin.flush()?;
 
     // 2. emit the sentinel
     writeln!(stdin, "echo {}", MARKER)?;
     stdin.flush()?;
 
-    // 3. read lines (as raw bytes) until we hit the sentinel or a stop-condition
+    //----------------------------------------------------------------------
+    // 3. read lines until we see the sentinel or we time-out
+    //----------------------------------------------------------------------
     let start = Instant::now();
     let mut buf      = String::new();
     let mut raw_line = Vec::<u8>::new();
 
     loop {
-        // timeout?
+        // … unchanged timeout / read-loop logic …
         if let Some(limit) = timeout_secs {
             if start.elapsed() > Duration::from_secs(limit) {
                 let _ = child.kill();
@@ -58,7 +65,7 @@ pub fn run_command_loop(
             Ok(0) => break, // EOF
             Ok(_) => {
                 // convert bytes → string, never error
-                let line: Cow<str> = match std::str::from_utf8(&raw_line) {
+                let line = match std::str::from_utf8(&raw_line) {
                     Ok(s)  => Cow::Borrowed(s),
                     Err(_) => Cow::Owned(String::from_utf8_lossy(&raw_line).into_owned()),
                 };
