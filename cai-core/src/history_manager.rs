@@ -66,7 +66,15 @@ impl History {
 
     /// Inserts a summary into the history.
     pub fn insert_summary(&mut self, summary: String) {
-        self.messages.insert(1, ChatMessage {
+
+        // Ensure we don't fuck up
+        let insertion_index = if self.messages.len() > 1 {
+            1 // Insert after the first message
+        } else {
+            0 // If there's only one message, insert at the start
+        };
+
+        self.messages.insert(insertion_index, ChatMessage {
             role: MessageRole::System,
             content: summary,
         });

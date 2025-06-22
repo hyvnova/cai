@@ -28,3 +28,6 @@ pub mod client_util;
 
 // Contains the passive context for the AI -- used to make the AI "think" better
 pub mod passive_context;
+
+// Contains the configuration constants
+pub mod constants;

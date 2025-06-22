@@ -7,7 +7,7 @@ impl UIBase for UI {
     fn init(&self) -> bool {
         
         true
-    }
+    } 
 
     /// This function acquires user input from frontend
     /// And appends it to the chat 

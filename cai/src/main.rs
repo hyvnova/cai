@@ -26,14 +26,11 @@ use cai_core::{
 
     types::MessageRole,
 
-    // Handles the history of messages
-    history_manager::History,
-
-    // Memory module -- handles memory management
-    memory_manager::MemoryManager,
-
     // Funny types
-    ui_trait::{MsgRole, MsgType, UIBase}
+    ui_trait::{MsgRole, MsgType, UIBase},
+
+    // Configuration constants
+    constants::*,
 };
 
 
@@ -45,34 +42,6 @@ use cai_cli::UI;
 #[cfg(feature = "app")]
 use cai_app::UI; // Here we use lib because in tauri project main.rs it's entry for tauri and lib is for being able to import from here
 
-// ===================== Configuration Constants =====================
-
-/// Maximum number of messages to keep in conversation history.
-const MAX_HISTORY: usize = 28;
-
-/// Number of messages to summarize (should be < MAX_HISTORY).
-const SUMMARY_SIZE: usize = MAX_HISTORY / 3;
-
-/// Maximum allowed consecutive continue tokens before requiring user input.
-const MAX_CONTINUE: usize = 20;
-
-/// Special tokens for control flow in AI responses.
-const RESTART_TOKEN: &str = "$$RESTART$$";
-const CONTINUE_TOKEN: &str = "$$CONTINUE$$";
-
-/// Default model to use if none is specified.
-/// o4-mini | gpt-4.1 | gpt-3.5-turbo
-const DEFAULT_MODEL: &str = "gpt-4.1";
-
-
-/// Language and OS for the AI to use in its responses.
-const LANGUAGE: &str = "Español (Incluyendo jerga y modismos contemporáneos propios de la juventud).";
-
-#[cfg(unix)]
-const OS: &str = "Linux (Ubuntu 22.04)";
-
-#[cfg(windows)]
-const OS: &str = "Windows 11";
 
 
 // ===============================================================
@@ -84,7 +53,7 @@ const OS: &str = "Windows 11";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
-    let auto_pull_result: AutoGitStatus = auto_git_pull::check_and_pull();
+    let auto_pull_result: AutoGitStatus = check_and_pull();
     match auto_pull_result {
         AutoGitStatus::AlreadyUpToDate | AutoGitStatus::LocalChanges  => {}
 
@@ -144,11 +113,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_string();
 
     // --- Initialize Core Components ---
-    let mut ai: Client = Client::new(
-        model,
-        History::new("history.json", MAX_HISTORY, SUMMARY_SIZE),
-        MemoryManager::new("memory.txt")
-    );
+    let mut ai: Client = Client::new();
 
     let mut shell: Shell = Shell::new(current_path.to_str().unwrap()).expect("Failed to create shell. *cries*");
 
