@@ -7,8 +7,10 @@
 //! ===============================================================
 
 use crate::client_util::call_with_backoff;
+use crate::model;
 use crate::passive_context::passive_context;
-use crate::types::MessageRole;
+use crate::prompt::get_model_choosing_prompt;
+use crate::types::{ChatMessage, MessageRole};
 use crate::ui_trait::MsgType;
 use crate::ui_trait::{ MsgRole, UIBase };
 use crate::{ history_manager::History, memory_manager::MemoryManager };
@@ -23,7 +25,7 @@ const MAX_RETRIES: usize = 10; // Max retries for API requests
 
 /// Represents the main AI client for chat interaction.
 pub struct Client {
-    model: String,
+    pub model: String,
     pub history: History,
     pub memory: MemoryManager,
     ai: APIClient<OpenAIConfig>,
@@ -91,11 +93,9 @@ impl Client {
         match self.make_independent_request(&prompt, None).await {
             Ok(summary) => {
                 self.history.insert_summary(format!("[Conversation summary]\n{}", summary));
-                Ok(summary) 
+                Ok(summary)
             }
-            Err(e) => {
-                Err(e)
-            }
+            Err(e) => { Err(e) }
         }
     }
 
@@ -108,13 +108,14 @@ impl Client {
         &mut self,
         ui: &dyn UIBase,
         role: MessageRole,
-        content: &str
+        content: &str,
+        model: Option<String>
     ) -> String {
         self.history.add_message(role, content.to_string());
 
         // Add passive context to the message --
         // ! REMOVE AFTER REQUEST
-        self.history.add_message(MessageRole::System, passive_context());
+        // self.history.add_message(MessageRole::System, passive_context());
 
         // * Keep history small but informative
         if self.history.needs_summarize() {
@@ -133,7 +134,6 @@ impl Client {
                     // Exit the program
                     std::process::exit(1);
                 }
-                
             }
         }
 
@@ -152,10 +152,17 @@ impl Client {
         // }
         // --- END DEBUG ---
 
+        // * Auto choose model - picks a model based on the content complexity
+        // In rare case of failure, defaults to self.model
+        let model: String = self
+            .choose_model(content, self.history.get()).await
+            .unwrap_or(model.unwrap_or(self.model.clone()));
+        println!("[DEBUG] Chosen model: {}", model);
+
         let response = call_with_backoff(
             &self.ai,
             json!({
-                "model": self.model.clone(),
+                "model": model,
                 "messages": self.history.get(),
                 "stream": false,
                 "max_completion_tokens": MAX_TOKENS,
@@ -163,7 +170,7 @@ impl Client {
         ).await;
 
         // ! REMOVING PASSIVE CONTEXT
-        self.history.messages.pop();
+        // self.history.messages.pop();
 
         match response {
             Ok(content) => {
@@ -179,6 +186,29 @@ impl Client {
                     format!("[ERROR] No content in response.")
                 );
                 return String::from("[No message]");
+            }
+        }
+    }
+
+    /// Chooses the appropriate model based on the content complexity.
+    pub async fn choose_model(&mut self, content: &str, history: Vec<ChatMessage>) -> Option<String> {
+        let p: String = get_model_choosing_prompt(content, &history);
+
+        match self.make_independent_request(&p, model!(Mid)).await {
+            Ok(model) => {
+                match model.trim() {
+                    "low" => model!(Low),
+                    "mid" => model!(Mid),
+                    "high" => model!(High),
+                    other => {
+                        eprintln!("[ERROR] Unknown model choice: {}", other);
+                        None
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("[ERROR] Model choosing failed: {}", e);
+                None
             }
         }
     }

@@ -5,6 +5,8 @@
 //! Ensures consistent and context-rich instructions for the AI model.
 //! ===============================================================
 
+use crate::{constants::{CONTINUE_TOKEN, LANGUAGE, OS, RESTART_TOKEN}, types::ChatMessage};
+
 pub const SYS_PROMPT: &str = r#"You're an intelligent and composed console assistant with a distinct and captivating personality.
 
 **Persona:**
@@ -36,6 +38,14 @@ pub const SYS_PROMPT: &str = r#"You're an intelligent and composed console assis
 {MEMORY}
 
 **Response Formatting Requirements:**
+
+- Python Code: You have access to a Python interpreter/runner. For Python code, use a code block named "python". For example:
+  ```python
+  import os
+  current_directory = os.getcwd()
+  print(current_directory) # Prints the current working directory
+  print(os.listdir('.')) # Lists files in current directory
+  ```
 
 - Terminal Commands: When executing a command, use a code block named "terminal" exclusively for commands. For example:
   ```terminal
@@ -77,28 +87,20 @@ Current Path: {CURRENT_PATH}
 /// Formats the system prompt with all required context.
 ///
 /// # Arguments
-/// * `continue_token` - Token for AI to signal continuation.
-/// * `restart_token` - Token for AI to signal restart.
 /// * `memory` - Current persistent memory.
-/// * `memory_prompt` - Prompt for memory context.
 /// * `cwd` - Current working directory.
-pub fn format_sys_prompt(
-    continue_token: &str,
-    restart_token: &str,
+pub fn get_sys_prompt(
     memory: &str,
-    memory_prompt: &str,
     cwd: &str,
-    language: &str,
-    os: &str,
 ) -> String {
     SYS_PROMPT
-        .replace("{RESTART_TOKEN}", restart_token)
+        .replace("{RESTART_TOKEN}", RESTART_TOKEN)
         .replace("{MEMORY}", memory)
-        .replace("{MEMORY_PROMPT}", memory_prompt)
-        .replace("{CONTINUE_TOKEN}", continue_token)
+        .replace("{MEMORY_PROMPT}", MEMORY_PROMPT)
+        .replace("{CONTINUE_TOKEN}", CONTINUE_TOKEN)
         .replace("{CURRENT_PATH}", cwd)
-        .replace("{LANGUAGE}", language)
-        .replace("{OS}", os)
+        .replace("{LANGUAGE}", LANGUAGE)
+        .replace("{OS}", OS)
 }
 pub const RESUME_PROMPT: &str = r#"Conversation has been resumed. Doesn't mean pick up where you left off, but you can.
 This is tecnically a new conversation, but you can use the memory to recall information from the previous one."#;
@@ -147,3 +149,25 @@ Guidance for Next Steps:
 Maintain Coherence and Tone:
     Ensure the summary and insights are clear, logically organized, and reflective of the original conversational tone.
 Given these instructions, please generate a summary and insight analysis of the conversation below."#;
+
+
+pub const MODEL_CHOOSING_PROMPT: &str = r#"Analyze the user prompt below. Based on the task’s complexity, reply with exactly one lowercase word—no quotes, no extra spaces:
+You're also provided with the conversation history for context, but focus primarily on the user prompt.
+
+- low  → trivial task, almost no computation
+- mid  → task with several steps or moderate processing
+- high → highly complex task requiring advanced reasoning
+
+Your output must be EXACTLY “low”, “mid”, or “high”. Provide no explanations
+
+--- [ User Prompt ]
+{user_prompt}
+---
+
+--- [ Conversation History ]
+{history}
+---"#;
+
+pub fn get_model_choosing_prompt(user_prompt: &str, history: &Vec<ChatMessage>) -> String {
+    MODEL_CHOOSING_PROMPT.replace("{user_prompt}", user_prompt).replace("{history}", &format!("{:?}", history))
+}

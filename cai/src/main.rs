@@ -10,6 +10,8 @@ use std::{ env, path::PathBuf };
 mod auto_git_pull;
 use auto_git_pull::{check_and_pull, AutoGitStatus};
 
+
+
 // ===================== Local Modules =====================
 use cai_core::{
     // Client module -- handles AI interactions
@@ -40,8 +42,7 @@ use cai_core::{
 use cai_cli::UI;
 
 #[cfg(feature = "app")]
-use cai_app::UI; // Here we use lib because in tauri project main.rs it's entry for tauri and lib is for being able to import from here
-
+use cai_app::UI;
 
 
 // ===============================================================
@@ -73,7 +74,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     let ui: &dyn UIBase = &UI;
-
     ui.init(); // Initialize the UI -- setup configuration, etc.
     
 
@@ -113,7 +113,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .to_string();
 
     // --- Initialize Core Components ---
-    let mut ai: Client = Client::new();
+    let mut assistant: Client = Client::new();
+    assistant.model = model;
 
     let mut shell: Shell = Shell::new(current_path.to_str().unwrap()).expect("Failed to create shell. *cries*");
 
@@ -131,22 +132,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut response: String = String::new();
 
     // --- System Prompt or Resume ---
-    if ai.history.is_empty() {
-        response = ai.send_message(
+    if assistant.history.is_empty() {
+        response = assistant.send_message(
             ui,
             MessageRole::System,
-            &format_sys_prompt(
-                CONTINUE_TOKEN,
-                RESTART_TOKEN,
-                ai.memory.read(None).as_str(), // Pass memory content
-                MEMORY_PROMPT, // Pass memory instructions
+            &get_sys_prompt(
+                assistant.memory.read(None).as_str(), // Pass memory content
                 current_path.to_str().unwrap(),
-                LANGUAGE,
-                OS,
-            )
+            ),
+            None
         ).await;
     } else {
-        response = ai.send_message(ui, MessageRole::System, RESUME_PROMPT).await;
+        response = assistant.send_message(ui, MessageRole::System, RESUME_PROMPT, None).await;
     }
 
     // ===================== CLI Commands =====================
@@ -162,11 +159,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match arg.to_lowercase().as_str() {
             // Delete History
             "clear_history" | "cls_h" => {
-                ai.history.clear();
+                assistant.history.clear();
             }
             // Delete memory
             "clear_memory" | "cls_m" => {
-                ai.memory.clear();
+                assistant.memory.clear();
             }
             // Unknown command
             other => {
@@ -195,15 +192,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // Exit condition.
             if input.eq_ignore_ascii_case("q") {
-                ai.history.save();
+                assistant.history.save();
                 println!("[SYSTEM] Chat history saved. Exiting.");
                 break;
             }
 
             println!();
 
-            response = ai.send_message(ui, MessageRole::User, &input).await;
+
+            // No pipeline
+            response = assistant.send_message(ui, MessageRole::User, &input, None).await;
         }
+
+
 
         // --- AI Response Processing Phase ---
         'processing_loop: loop {
@@ -225,11 +226,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
 
             parse_commands_block(ui, &response, &mut shell, &mut sys_message); // Handles shell commands
-            parse_memory_block(ui, &response, &mut ai, &mut sys_message); // Handles memory updates
+            parse_memory_block(ui, &response, &mut assistant, &mut sys_message); // Handles memory updates
+            parse_python_block(ui, &response, &mut sys_message); // Handles python code execution
 
             // * Token processing ----------------------------
             if response.contains(RESTART_TOKEN) {
-                ai.history.save();
+                assistant.history.save();
 
                 ui.print_message(
                     MsgRole::System,
@@ -247,19 +249,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
 
                 if sys_message.is_empty() {
-                    response = ai.send_message(ui, MessageRole::System, "[Continue]").await;
+                    response = assistant.send_message(ui, MessageRole::System, "[Continue]", None).await;
                 } else {
-                    response = ai.send_message(ui, MessageRole::System, &sys_message).await;
+                    response = assistant.send_message(ui, MessageRole::System, &sys_message, None).await;
                 }
                 continues += 1;
 
                 // Enforce continue limit.
                 if continues >= MAX_CONTINUE {
                     continues = 0;
-                    response = ai.send_message(
+                    response = assistant.send_message(
                         ui,
                         MessageRole::System,
-                        "[You've reached the maximum number of continues.]"
+                        "[You've reached the maximum number of continues.]",
+                        None
                     ).await;
                     break 'processing_loop;
                 }
@@ -268,7 +271,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 // If there was a system message, send it and continue processing.
                 if !sys_message.is_empty() {
-                    response = ai.send_message(ui, MessageRole::System, &sys_message).await;
+                    response = assistant.send_message(ui, MessageRole::System, &sys_message, None).await;
                 }
                 // Reset continue counter if needed.
                 if continues != 0 {
@@ -282,8 +285,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-
-
     }
 
     Ok(())

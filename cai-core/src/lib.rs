@@ -1,6 +1,5 @@
 pub mod ui_trait;
 
-
 // Client module -- handles AI interactions
 pub mod client;
 
@@ -31,3 +30,5 @@ pub mod passive_context;
 
 // Contains the configuration constants
 pub mod constants;
+
+pub mod models;

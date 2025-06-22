@@ -6,7 +6,6 @@ members = [
     "cai-core",
     "cai-cli",
     "cai-app/rust-src", 
-    "pipeline",
 ]
 
 # optional shared dependencies across the whole workspace

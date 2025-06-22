@@ -5,7 +5,6 @@ pub struct UI;
 
 impl UIBase for UI {
     fn init(&self) -> bool {
-        
         true
     } 
 
@@ -15,7 +14,6 @@ impl UIBase for UI {
         String::new()
     }
 
-    fn print_message(&self, message_type: MsgRole, message_format: MsgType) {
-        
-    }
+    fn print_message(&self, message_type: MsgRole, message_format: MsgType) {}
+    
 }
