@@ -126,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     | When 0, user input is required; otherwise, AI continues
     ---------------------------------------------------------------
     */
-    let mut continues: usize = 0;
+    let mut continues: usize = 1; // 1 so first response get's passed into processing loop - nasty fix but whatever
 
     // Buffer for the latest AI response
     let mut response: String = String::new();
@@ -225,9 +225,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 sys_message.push_str(&format!("[Write Block Failed]\n{}\n", e));
             }
 
-            parse_commands_block(ui, &response, &mut shell, &mut sys_message); // Handles shell commands
-            parse_memory_block(ui, &response, &mut assistant, &mut sys_message); // Handles memory updates
             parse_python_block(ui, &response, &mut sys_message); // Handles python code execution
+            parse_commands_block(ui, &response, &mut shell, &mut sys_message); // Handles shell commands
+            // parse_memory_block(ui, &response, &mut assistant, &mut sys_message); // Handles memory updates
 
             // * Token processing ----------------------------
             if response.contains(RESTART_TOKEN) {
