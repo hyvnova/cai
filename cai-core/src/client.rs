@@ -194,7 +194,7 @@ impl Client {
     pub async fn choose_model(&mut self, content: &str, history: Vec<ChatMessage>) -> Option<String> {
         let p: String = get_model_choosing_prompt(content, &history);
 
-        match self.make_independent_request(&p, model!(Mid)).await {
+        match self.make_independent_request(&p, model!(Smart)).await {
             Ok(model) => {
                 match model.trim() {
                     "low" => model!(Low),
