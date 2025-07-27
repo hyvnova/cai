@@ -13,8 +13,7 @@ pub enum AutoGitStatus {
     LocalChanges,
     NoRemoteTracking,
     NetworkIssue,
-    Warning(String),
-    Error(String),
+    Warning
 }
 
 pub fn check_and_pull() -> AutoGitStatus {
@@ -58,14 +57,14 @@ pub fn check_and_pull() -> AutoGitStatus {
         }
     } else {
         log_warn("Could not check local changes.");
-        return AutoGitStatus::Warning("Could not check local changes".to_string());
+        return AutoGitStatus::Warning;
     }
 
     // 4. Get current branch
     let branch = get_current_branch();
     if branch.is_none() {
         log_warn("Could not get current branch.");
-        return AutoGitStatus::Warning("Could not get current branch".to_string());
+        return AutoGitStatus::Warning;
     }
     let branch = branch.unwrap();
 
@@ -99,11 +98,11 @@ pub fn check_and_pull() -> AutoGitStatus {
                     return AutoGitStatus::Pulled;
                 } else {
                     log_warn("Failed to pull changes.");
-                    return AutoGitStatus::Warning("Failed to pull changes".to_string());
+                    return AutoGitStatus::Warning;
                 }
             } else {
                 log_warn("Failed to execute git pull.");
-                return AutoGitStatus::Warning("Failed to execute git pull".to_string());
+                return AutoGitStatus::Warning;
             }
         } else {
             log_info("Already up to date.");
@@ -111,7 +110,7 @@ pub fn check_and_pull() -> AutoGitStatus {
         }
     } else {
         log_warn("Could not compare with remote.");
-        return AutoGitStatus::Warning("Could not compare with remote".to_string());
+        return AutoGitStatus::Warning;
     }
 }
 
