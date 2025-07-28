@@ -2,8 +2,7 @@ CAI
 
 A customizable Rust-powered interface to chat with OpenAI's models from your terminal.
 
-This is not just a chatbot—it’s a framework. Designed for developers who want a fast, scriptable way to interact with AI models. It supports persistent memory, command execution, and soon, a full web UI.
-
+This is not just a chatbot—it’s a framework. Designed for developers who want a fast, scriptable way to interact with AI models. It supports persistent memory, command execution, and NEVER will have a GUI
 
 ---
 

@@ -8,7 +8,6 @@ default-run = "cai"
 [features]
 default = ["cli"]
 cli = ["cai_cli"]
-app = ["cai_app"]
 no_auto_git_pull = []
 
 [dependencies]
@@ -17,4 +16,3 @@ cai_core = { path = "../cai-core" }
 
 #  UIs
 cai_cli = { path = "../cai-cli", optional = true }
-cai_app = { path = "../cai-app/rust-src", optional = true }

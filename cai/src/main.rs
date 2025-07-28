@@ -24,8 +24,6 @@ use cai_core::{
 #[cfg(feature = "cli")]
 use cai_cli::UI;
 
-#[cfg(feature = "app")]
-use cai_app::UI;
 
 
 // ===============================================================

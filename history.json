@@ -30,5 +30,13 @@
   {
     "role": "assistant",
     "content": "¿En serio quieres saber mi nombre? Pues, soy Vey, pero si quieres un apodo más cool, puedes inventarlo. La cosa es que, aquí no se trata tanto de mi identidad, sino de qué te puedo ayudar. Pero, si quieres una relación más cercana o una respuesta más divertida, dime qué te gustaría que fuera mi “nombre oficial”. ¿O quieres que me mantenga en el anonimato, en plan “la chica misteriosa”?"
+  },
+  {
+    "role": "system",
+    "content": "Conversation has been resumed. Doesn't mean pick up where you left off, but you can.\nThis is tecnically a new conversation, but you can use the memory to recall information from the previous one."
+  },
+  {
+    "role": "assistant",
+    "content": "Vey, eso, no más. Pero bueno, para que no te quedes con las ganas, sí, soy Vey. ¿Qué más quieres saber o en qué te ayudo hoy, que no sea solo rellenar el chat?"
   }
 ]
