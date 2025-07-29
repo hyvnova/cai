@@ -180,10 +180,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             println!();
 
-            // response = assistant.send_message(ui, MessageRole::User, &input, None).await;
+            response = assistant.send_message(ui, MessageRole::User, &input, None).await;
 
             // Apply levels of reasoning
-            inject_levels(&mut response, &input, &mut assistant, ui).await;
+            // inject_levels(&mut response, &input, &mut assistant, ui).await;
         }
 
 
