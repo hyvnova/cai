@@ -6,9 +6,8 @@
 //! Provides a clean interface for the CLI to communicate with the AI.
 //! ===============================================================
 
-use crate::client_util::call_with_backoff;
+use crate::client_util::*;
 use crate::model;
-use crate::passive_context::passive_context;
 use crate::prompt::get_model_choosing_prompt;
 use crate::types::{ChatMessage, MessageRole};
 use crate::ui_trait::MsgType;
@@ -71,7 +70,6 @@ impl Client {
                         "content": content
                     }
                 ],
-                "stream": false,
                 "max_completion_tokens": INDEPENDENT_MAX_TOKENS,
             })
         ).await;
@@ -111,95 +109,147 @@ impl Client {
         content: &str,
         model: Option<String>
     ) -> String {
+        // 1) Record user/system content
         self.history.add_message(role, content.to_string());
 
-        // Add passive context to the message --
-        // ! REMOVE AFTER REQUEST
-        // self.history.add_message(MessageRole::System, passive_context());
-
-        // * Keep history small but informative
+        // 2) Summarize if needed
         if self.history.needs_summarize() {
-            match self.perform_history_summary().await {
-                Ok(_) => {
-                    // println!("[DEBUG] History summary performed successfully");
-                }
-                Err(e) => {
-                    ui.print_message(
-                        MsgRole::System,
-                        MsgType::Plain(format!("[ERROR] Summarization failed: {}", e.to_string()))
-                    );
-
-                    // Save history to disk
-                    self.history.save();
-                    // Exit the program
-                    std::process::exit(1);
-                }
-            }
-        }
-
-        // --- START DEBUG ---
-        // Print the request structure just before sending
-        // Use serde_json to attempt serialization and print the result or error
-        // match serde_json::to_string_pretty(&req) {
-        //     Ok(json_string) => {
-        //         println!("[DEBUG] Request JSON Payload:\n{}", json_string);
-        //     }
-        //     Err(e) => {
-        //         eprintln!("[DEBUG] FAILED TO SERIALIZE REQUEST TO JSON: {:?}", e);
-        //         // Optionally print the raw request object too
-        //         eprintln!("[DEBUG] Raw Request Object: {:#?}", req);
-        //     }
-        // }
-        // --- END DEBUG ---
-
-        // * Auto choose model - picks a model based on the content complexity
-        // In rare case of failure, defaults to self.model
-        let model: String = self
-            .choose_model(content, self.history.get()).await
-            .unwrap_or(model.unwrap_or(self.model.clone()));
-        println!("[DEBUG] Chosen model: {}", model);
-
-        let response = call_with_backoff(
-            &self.ai,
-            json!({
-                "model": model,
-                "messages": self.history.get(),
-                "stream": false,
-                "max_completion_tokens": MAX_TOKENS,
-            })
-        ).await;
-
-        // ! REMOVING PASSIVE CONTEXT
-        // self.history.messages.pop();
-
-        match response {
-            Ok(content) => {
-                // println!("[DEBUG] Request successful");
-                self.history.add_message(MessageRole::Assistant, content.to_string());
-                ui.print_message(MsgRole::Assistant, MsgType::Plain(content.to_string()));
-                return content;
-            }
-            Err(()) => {
-                eprintln!("[ERROR] No content in response.");
-                self.history.add_message(
-                    MessageRole::System,
-                    format!("[ERROR] No content in response.")
+            if let Err(e) = self.perform_history_summary().await {
+                ui.print_message(
+                    MsgRole::System,
+                    MsgType::Plain(format!("[ERROR] Summarization failed: {}", e))
                 );
-                return String::from("[No message]");
+                self.history.save();
+                std::process::exit(1);
             }
         }
+
+        // 3) Choose model via LLM (fallback to provided or default)
+        let chosen_model: String = self
+            .choose_model(content, self.history.get())
+            .await
+            .unwrap_or(model.unwrap_or(self.model.clone()));
+        println!("[DEBUG] Chosen model: {}", chosen_model);
+
+        // 4) Working copy of messages (don't pollute persistent history with tool traffic)
+        let mut rt_messages: Value = json!(self.history.get()); // Vec<messages> as Value
+        let mut assistant_final_text: Option<String> = None;
+
+        // 5) Base request JSON
+        let mut req = json!({
+            "model": chosen_model,
+            "messages": rt_messages,
+        });
+
+        // 6) Tools + profile
+        req["tools"] = tools_json();
+        if let Some(variant) = model_variant_of(&chosen_model) {
+            merge_json(&mut req, request_profile_of(&variant));
+        }
+        
+        // 7) Tool-calling loop (limited retries)
+        for _ in 0..5 {
+            // NOTE: call_with_backoff should return the RAW JSON string for tool calls.
+            let resp = call_with_backoff(&self.ai, req.clone()).await;
+
+            match resp {
+                Ok(s) => {
+                    // Try parse as JSON (Responses/ChatCompletions raw body)
+                    if let Ok(v) = serde_json::from_str::<Value>(&s) {
+                        if let Some(choice) = v.get("choices").and_then(|c| c.get(0)) {
+                            let msg = &choice["message"];
+                            // Tools?
+                            if let Some(tc) = msg.get("tool_calls").and_then(|x| x.as_array()) {
+                                // Append the assistant msg (with tool_calls) to runtime messages
+                                rt_messages.as_array_mut().unwrap().push(msg.clone());
+
+                                // Execute each tool
+                                for t in tc {
+                                    let call_id = t.get("id").and_then(|x| x.as_str()).unwrap_or("");
+                                    let fname = t.get("function").and_then(|f| f.get("name")).and_then(|x| x.as_str()).unwrap_or("");
+                                    let fargs = t.get("function").and_then(|f| f.get("arguments")).and_then(|x| x.as_str()).unwrap_or("{}");
+                                    let args_val: Value = serde_json::from_str(fargs).unwrap_or(json!({}));
+
+                                    let result = match fname {
+                                        "run_terminal" => {
+                                            let cmd = args_val.get("command").and_then(|x| x.as_str()).unwrap_or("");
+                                            run_terminal(cmd)
+                                        },
+                                        "run_python" => {
+                                            let code = args_val.get("code").and_then(|x| x.as_str()).unwrap_or("");
+                                            run_python(code)
+                                        },
+                                        "write_file" => {
+                                            let path = args_val.get("path").and_then(|x| x.as_str()).unwrap_or("");
+                                            let content = args_val.get("content").and_then(|x| x.as_str()).unwrap_or("");
+                                            match write_file(path, content) {
+                                                Ok(_) => String::from("[write_file] OK"),
+                                                Err(e) => format!("[write_file] ERROR: {}", e),
+                                            }
+                                        },
+                                        _ => format!("[tool error] Unknown tool: {}", fname),
+                                    };
+
+                                    // Push tool result
+                                    rt_messages.as_array_mut().unwrap().push(json!({
+                                        "role": "tool",
+                                        "tool_call_id": call_id,
+                                        "content": result
+                                    }));
+                                }
+
+                                // Re-ask with augmented messages
+                                req["messages"] = rt_messages.clone();
+                                continue;
+                            }
+
+                            // No tool calls → take assistant content
+                            if let Some(text) = msg.get("content").and_then(|x| x.as_str()) {
+                                assistant_final_text = Some(text.to_string());
+                                break;
+                            }
+                        }
+                    }
+
+                    // If not JSON or missing fields → treat as final assistant text
+                    assistant_final_text = Some(s);
+                    break;
+                }
+                Err(_) => {
+                    assistant_final_text = Some(String::from("[ERROR] Request failed."));
+                    break;
+                }
+            }
+        }
+
+        let content = assistant_final_text.unwrap_or_else(|| String::from("[No message]"));
+
+        // Only the final assistant text goes into persistent history/UI
+        self.history.add_message(MessageRole::Assistant, content.clone());
+        ui.print_message(MsgRole::Assistant, MsgType::Plain(content.clone()));
+
+        if self.history.needs_summarize() {
+            let _ = self.perform_history_summary().await;
+        }
+        self.history.save();
+
+        content
     }
 
+
+
+    /// Chooses the appropriate model based on the content complexity.
     /// Chooses the appropriate model based on the content complexity.
     pub async fn choose_model(&mut self, content: &str, history: Vec<ChatMessage>) -> Option<String> {
         let p: String = get_model_choosing_prompt(content, &history);
-
-        match self.make_independent_request(&p, model!(Smart)).await {
-            Ok(model) => {
-                match model.trim() {
-                    "low" => model!(Low),
-                    "mid" => model!(Mid),
-                    "high" => model!(High),
+        // Use a cheap decider; fallback to default on failure
+        match self.make_independent_request(&p, model!(Mini)).await {
+            Ok(choice) => {
+                match choice.trim() {
+                    "nano" => model!(Nano),
+                    "mini" => model!(Mini),
+                    "full" => model!(Full),
+                    "max"  => model!(Max),
                     other => {
                         eprintln!("[ERROR] Unknown model choice: {}", other);
                         None
@@ -212,4 +262,8 @@ impl Client {
             }
         }
     }
+
 }
+
+
+

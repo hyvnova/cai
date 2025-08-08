@@ -15,7 +15,7 @@ use auto_git_pull::{check_and_pull, AutoGitStatus};
 // ===================== Local Modules =====================
 use cai_core::{
     // Client module -- handles AI interactions
-    client::Client, constants::*, levels::inject_levels, parsers::*, prompt::*, shell::Shell, types::MessageRole, ui_trait::{MsgRole, MsgType, UIBase}
+    client::Client, constants::*, parsers::*, prompt::*, shell::Shell, types::MessageRole, ui_trait::{MsgRole, MsgType, UIBase}
 };
 
 
@@ -182,8 +182,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             response = assistant.send_message(ui, MessageRole::User, &input, None).await;
 
-            // Apply levels of reasoning
-            // inject_levels(&mut response, &input, &mut assistant, ui).await;
         }
 
 

@@ -1,5 +1,5 @@
 use std::{
-    borrow::Cow, io::{ BufRead, BufReader, Write }, path::{ Path, PathBuf }, process::Child, thread, time::{Duration, Instant}
+    borrow::Cow, io::{ BufRead, BufReader, Write }, path::{ Path, PathBuf }, process::Child, time::{Duration, Instant}
 };
 
 use lazy_static::lazy_static;

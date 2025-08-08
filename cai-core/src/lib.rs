@@ -33,6 +33,3 @@ pub mod constants;
 
 pub mod models;
 
-// Levels of reasoning -- provides an injection function that, after initial AI solution/response will inject the 9 levels
-// To further fuck up the response
-pub mod levels;

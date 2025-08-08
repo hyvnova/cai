@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::{ fs, io::{ self, Write }, process::{ Command, Stdio } };
+use std::{ io::{ self, Write }, process::{ Command, Stdio } };
 use tempfile::NamedTempFile;
 
 use crate::ui_trait::{ MsgRole, MsgType, UIBase };
@@ -13,7 +13,7 @@ lazy_static! {
 
 pub fn parse_python_block(ui: &dyn UIBase, response: &str, sys_message: &mut String) {
     // 1. collect code snippets
-    let mut snippets: Vec<&str> = PYTHON_BLOCK_RE.captures_iter(response)
+    let snippets: Vec<&str> = PYTHON_BLOCK_RE.captures_iter(response)
         .filter_map(|cap| cap.get(1).map(|m| m.as_str()))
         .collect();
 

@@ -1,23 +1,20 @@
 pub enum Model {
-    Low,
-    Mid,
-    Smart, // Lower context than mid, but smarter, but more expensive
-    High,
+    Nano,   // ultra-cheap, basic stuff
+    Mini,   // fast + good for mid-tier reasoning
+    Full,   // full GPT-5 power
+    Max,    // same as Full but with maximum context / heavy reasoning
 }
 
 pub fn get_model(model: Model) -> Option<String> {
     match model {
-        Model::Low => Some("gpt-4.1-nano-2025-04-14".to_string()),
-        Model::Mid => Some("o4-mini-2025-04-16".to_string()),
-        Model::Smart => Some("gpt-4o-2024-08-06".to_string()),
-        Model::High => Some("o3-2025-04-16".to_string()),
+        Model::Nano => Some("gpt-5-nano".to_string()),    // cheap/trivial
+        Model::Mini => Some("gpt-5-mini".to_string()),    // balanced
+        Model::Full => Some("gpt-5".to_string()),         // full reasoning
+        Model::Max  => Some("gpt-5".to_string()),         // same model, but you’d set max context/tooling in the API call
     }
 }
 
-
 #[macro_export]
-/// Some would say this is overkill and probably dumb
-/// And I say to those people: Wait until I take my meds all of you are going to dissapear HAHAHAHAHAH
 macro_rules! model {
     ($variant:ident) => {
         $crate::models::get_model($crate::models::Model::$variant)
